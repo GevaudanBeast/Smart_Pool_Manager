@@ -34,3 +34,13 @@ jobs:
         uses: hacs/action@main
         with:
           category: integration
+          # Checks exiges uniquement pour l'inclusion dans le store HACS par
+          # defaut, non pertinents pour une installation en custom repository :
+          #   brands      : domaine non present dans home-assistant/brands
+          #                 (necessiterait une PR dans ce depot externe)
+          #   topics      : topics GitHub du depot (a definir dans Settings)
+          #   description : description GitHub du depot (a definir dans Settings)
+          # Pour rendre topics/description conformes plutot que de les ignorer,
+          # renseigner la description et des topics dans les reglages du depot
+          # puis retirer "topics description" de cette ligne.
+          ignore: brands topics description
