@@ -1,0 +1,136 @@
+# Dashboard Lovelace SmartPoolManager pret a importer.
+#
+# TODO IMPORTANT : remplacer partout <pool_slug> par le slug reel de votre
+# piscine apres installation. Le slug est derive du nom saisi dans le config
+# flow (ex: "Ma piscine" -> "ma_piscine"). Les entity_id suivent le format :
+#   sensor.smart_pool_manager_<pool_slug>_<suffix>
+#   switch.smart_pool_manager_<pool_slug>_<suffix>
+#   select.smart_pool_manager_<pool_slug>_<suffix>
+#
+# A coller dans l'editeur de configuration brute (raw config editor) d'un
+# nouveau dashboard.
+
+title: SmartPoolManager
+views:
+  - title: Piscine
+    path: pool
+    cards:
+      # Carte 1 - Etat general
+      - type: entities
+        title: Etat general
+        entities:
+          - entity: sensor.smart_pool_manager_<pool_slug>_water_status
+            name: Statut global
+          - entity: sensor.smart_pool_manager_<pool_slug>_water_temperature
+            name: Temperature eau
+          - entity: sensor.smart_pool_manager_<pool_slug>_ph_status
+            name: Statut pH
+          - entity: sensor.smart_pool_manager_<pool_slug>_cl_status
+            name: Statut Cl
+          - entity: sensor.smart_pool_manager_<pool_slug>_orp_status
+            name: Statut ORP
+
+      # Carte 2 - Chimie (jauges)
+      - type: horizontal-stack
+        cards:
+          - type: gauge
+            name: pH
+            entity: sensor.smart_pool_manager_<pool_slug>_ph
+            min: 6.5
+            max: 8.5
+            needle: true
+            severity:
+              green: 7.2
+              yellow: 7.0
+              red: 7.8
+          - type: gauge
+            name: ORP
+            entity: sensor.smart_pool_manager_<pool_slug>_orp
+            unit: mV
+            min: 400
+            max: 900
+            needle: true
+            severity:
+              green: 700
+              yellow: 650
+              red: 400
+          - type: gauge
+            name: Cl
+            entity: sensor.smart_pool_manager_<pool_slug>_cl
+            unit: mg/L
+            min: 0
+            max: 5
+            needle: true
+            severity:
+              green: 1.0
+              yellow: 0.5
+              red: 3.0
+
+      # Carte 3 - Filtration
+      - type: entities
+        title: Filtration
+        entities:
+          - entity: switch.smart_pool_manager_<pool_slug>_filtration
+            name: Filtration
+          - entity: select.smart_pool_manager_<pool_slug>_filtration_mode
+            name: Mode filtration
+          - entity: sensor.smart_pool_manager_<pool_slug>_filtration_recommended_min
+            name: Duree recommandee
+          - entity: sensor.smart_pool_manager_<pool_slug>_filtration_min_min
+            name: Duree min
+          - entity: sensor.smart_pool_manager_<pool_slug>_filtration_max_min
+            name: Duree max
+
+      # Carte 4 - Dosage
+      - type: entities
+        title: Dosage
+        entities:
+          - entity: switch.smart_pool_manager_<pool_slug>_dosing_auto
+            name: Dosage automatique
+          - entity: sensor.smart_pool_manager_<pool_slug>_dosing_ph_ml
+            name: Dose pH calculee
+          - entity: sensor.smart_pool_manager_<pool_slug>_dosing_ph_duration_s
+            name: Duree pompe pH
+          - entity: sensor.smart_pool_manager_<pool_slug>_dosing_cl_ml
+            name: Dose Cl calculee
+          - entity: sensor.smart_pool_manager_<pool_slug>_dosing_cl_duration_s
+            name: Duree pompe Cl
+          - entity: sensor.smart_pool_manager_<pool_slug>_last_dose_ph
+            name: Derniere dose pH
+          - entity: sensor.smart_pool_manager_<pool_slug>_last_dose_cl
+            name: Derniere dose Cl
+
+      # Boutons de dosage manuel
+      - type: horizontal-stack
+        cards:
+          - type: button
+            name: Dose pH now
+            icon: mdi:flask
+            tap_action:
+              action: call-service
+              service: smart_pool_manager.dose_ph
+          - type: button
+            name: Dose Cl now
+            icon: mdi:flask-outline
+            tap_action:
+              action: call-service
+              service: smart_pool_manager.dose_cl
+
+      # Carte 5 - Alertes et blocages securite
+      - type: markdown
+        title: Alertes
+        content: >
+          ### Alertes actives
+
+          {% set alerts =
+          states('sensor.smart_pool_manager_<pool_slug>_alerts') %}
+
+          {% if alerts not in ['[]', 'unknown', 'unavailable', ''] %}
+
+          {{ alerts }}
+
+          {% else %}
+
+          Aucune alerte active.
+
+          {% endif %}

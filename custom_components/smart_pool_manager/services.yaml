@@ -1,0 +1,49 @@
+# Definition des services SmartPoolManager exposes dans l'UI Developer Tools.
+
+dose_ph:
+  name: Dose pH
+  description: "Declenche un cycle de dosage pH manuel immediat"
+  fields:
+    entry_id:
+      name: Entry ID
+      description: "ID entree config (optionnel si une seule piscine)"
+      required: false
+      selector:
+        text:
+
+dose_cl:
+  name: Dose Cl
+  description: "Declenche un cycle de dosage Cl manuel immediat"
+  fields:
+    entry_id:
+      name: Entry ID
+      description: "ID entree config (optionnel si une seule piscine)"
+      required: false
+      selector:
+        text:
+
+set_filtration_mode:
+  name: Set filtration mode
+  description: "Forcer un mode de filtration"
+  fields:
+    mode:
+      name: Mode
+      description: "Mode de filtration a appliquer"
+      required: true
+      selector:
+        select:
+          options:
+            - auto
+            - force_on
+            - force_off
+            - winter
+    entry_id:
+      name: Entry ID
+      description: "ID entree config (optionnel si une seule piscine)"
+      required: false
+      selector:
+        text:
+
+reload:
+  name: Reload
+  description: "Recharger la configuration sans redemarrer HA"
