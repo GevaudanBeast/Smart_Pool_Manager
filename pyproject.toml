@@ -1,0 +1,23 @@
+# Configuration des outils de developpement pour SmartPoolManager.
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+# Permet aux tests d'importer le sous-package calculations directement.
+pythonpath = ["custom_components/smart_pool_manager"]
+
+[tool.ruff]
+target-version = "py312"
+line-length = 88
+
+[tool.ruff.lint]
+# Regles de base : erreurs pyflakes (F), style pycodestyle (E, W),
+# imports (I), bugbear (B), simplifications (SIM) et upgrade (UP).
+select = ["E", "W", "F", "I", "B", "SIM", "UP"]
+ignore = [
+  # Les appels a des methodes protegees du coordinator (_async_dose_ph) depuis
+  # les services sont volontaires et internes a l'integration.
+]
+
+[tool.ruff.lint.per-file-ignores]
+# Les tests inserent volontairement sys.path avant les imports.
+"tests/*" = ["E402"]

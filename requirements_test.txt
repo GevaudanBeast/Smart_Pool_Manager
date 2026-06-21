@@ -1,0 +1,4 @@
+# Dependances necessaires pour executer la suite de tests.
+# Les tests portent sur les fonctions de calcul pures et n'ont pas besoin de
+# Home Assistant.
+pytest>=8.0.0

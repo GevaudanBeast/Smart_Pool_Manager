@@ -14,7 +14,6 @@ from __future__ import annotations
 from typing import Any
 
 import voluptuous as vol
-
 from homeassistant.config_entries import (
     ConfigEntry,
     ConfigFlow,
@@ -71,7 +70,6 @@ from .const import (
     DEFAULT_CL_TARGET_MG_L,
     DEFAULT_CL_TOLERANCE,
     DEFAULT_DELAY_BETWEEN_DOSES_MIN,
-    DEFAULT_DISINFECTANT_CONCENTRATION_PCT,
     DEFAULT_DOSE_MAX_CL_ML,
     DEFAULT_DOSE_MAX_PH_ML,
     DEFAULT_DOSING_AUTO,
@@ -88,10 +86,12 @@ from .const import (
     DEFAULT_PH_MINUS_CONCENTRATION_PCT,
     DEFAULT_PH_TARGET,
     DEFAULT_PH_TOLERANCE,
-    DEFAULT_DISINFECTANT_CONCENTRATION_PCT as _DISINF_DEFAULT,
     DEFAULT_VOLUME_M3,
     DOMAIN,
     TREATMENT_TYPES,
+)
+from .const import (
+    DEFAULT_DISINFECTANT_CONCENTRATION_PCT as _DISINF_DEFAULT,
 )
 
 
@@ -198,9 +198,7 @@ class SmartPoolConfigFlow(ConfigFlow, domain=DOMAIN):
         self._data: dict[str, Any] = {}
 
     # ----- Etape 1 : profil piscine -----
-    async def async_step_user(
-        self, user_input: dict[str, Any] | None = None
-    ) -> Any:
+    async def async_step_user(self, user_input: dict[str, Any] | None = None) -> Any:
         """Premiere etape : profil de la piscine."""
         if user_input is not None:
             self._data.update(user_input)
@@ -209,9 +207,7 @@ class SmartPoolConfigFlow(ConfigFlow, domain=DOMAIN):
         schema = vol.Schema(
             {
                 vol.Required(CONF_NAME, default="Ma piscine"): TextSelector(),
-                vol.Required(
-                    CONF_VOLUME_M3, default=DEFAULT_VOLUME_M3
-                ): NumberSelector(
+                vol.Required(CONF_VOLUME_M3, default=DEFAULT_VOLUME_M3): NumberSelector(
                     NumberSelectorConfig(
                         min=1.0, max=500.0, step=0.5, mode=NumberSelectorMode.BOX
                     )
@@ -246,9 +242,7 @@ class SmartPoolConfigFlow(ConfigFlow, domain=DOMAIN):
         return self.async_show_form(step_id="user", data_schema=schema)
 
     # ----- Etape 2 : entites sonde -----
-    async def async_step_probe(
-        self, user_input: dict[str, Any] | None = None
-    ) -> Any:
+    async def async_step_probe(self, user_input: dict[str, Any] | None = None) -> Any:
         """Deuxieme etape : entites de la sonde Zigbee."""
         if user_input is not None:
             self._data.update(user_input)
@@ -268,9 +262,7 @@ class SmartPoolConfigFlow(ConfigFlow, domain=DOMAIN):
         return self.async_show_form(step_id="probe", data_schema=schema)
 
     # ----- Etape 3 : pompes doseuses -----
-    async def async_step_dosing(
-        self, user_input: dict[str, Any] | None = None
-    ) -> Any:
+    async def async_step_dosing(self, user_input: dict[str, Any] | None = None) -> Any:
         """Troisieme etape : pompes doseuses ESPHome."""
         if user_input is not None:
             self._data.update(user_input)
@@ -303,9 +295,7 @@ class SmartPoolConfigFlow(ConfigFlow, domain=DOMAIN):
         return self.async_show_form(step_id="dosing", data_schema=schema)
 
     # ----- Etape 4 : entites systeme -----
-    async def async_step_system(
-        self, user_input: dict[str, Any] | None = None
-    ) -> Any:
+    async def async_step_system(self, user_input: dict[str, Any] | None = None) -> Any:
         """Quatrieme etape : entites systeme et interface Solar Optimizer."""
         if user_input is not None:
             self._data.update(user_input)
@@ -345,13 +335,9 @@ class SmartPoolConfigFlow(ConfigFlow, domain=DOMAIN):
             self._data.update(user_input)
             await self.async_set_unique_id(self._data[CONF_NAME])
             self._abort_if_unique_id_configured()
-            return self.async_create_entry(
-                title=self._data[CONF_NAME], data=self._data
-            )
+            return self.async_create_entry(title=self._data[CONF_NAME], data=self._data)
 
-        return self.async_show_form(
-            step_id="chemistry", data_schema=_step5_schema({})
-        )
+        return self.async_show_form(step_id="chemistry", data_schema=_step5_schema({}))
 
     @staticmethod
     @callback
@@ -370,15 +356,11 @@ class SmartPoolOptionsFlow(OptionsFlow):
         """Conserve l'entree pour pre-remplir les valeurs courantes."""
         self.config_entry = config_entry
 
-    async def async_step_init(
-        self, user_input: dict[str, Any] | None = None
-    ) -> Any:
+    async def async_step_init(self, user_input: dict[str, Any] | None = None) -> Any:
         """Affiche et enregistre les consignes chimiques modifiables."""
         if user_input is not None:
             return self.async_create_entry(title="", data=user_input)
 
         # Valeurs courantes : options si presentes, sinon data initiale.
         defaults = {**self.config_entry.data, **self.config_entry.options}
-        return self.async_show_form(
-            step_id="init", data_schema=_step5_schema(defaults)
-        )
+        return self.async_show_form(step_id="init", data_schema=_step5_schema(defaults))

@@ -21,6 +21,8 @@ from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 
 from .calculations import chemistry, filtration, safety
 from .const import (
+    CONF_CL_TARGET_MG_L,
+    CONF_CL_TOLERANCE,
     CONF_DELAY_BETWEEN_DOSES_MIN,
     CONF_DISINFECTANT_CONCENTRATION_PCT,
     CONF_DOSE_MAX_CL_ML,
@@ -48,8 +50,6 @@ from .const import (
     CONF_PH_MINUS_CONCENTRATION_PCT,
     CONF_PH_TARGET,
     CONF_PH_TOLERANCE,
-    CONF_CL_TARGET_MG_L,
-    CONF_CL_TOLERANCE,
     CONF_VOLUME_M3,
     COORDINATOR_UPDATE_INTERVAL,
     DAILY_REPORT_HOUR,
@@ -181,8 +181,12 @@ class SmartPoolCoordinator(DataUpdateCoordinator):
 
         flow_ph = float(self.config[CONF_FLOW_RATE_PH_ML_MIN])
         flow_cl = float(self.config[CONF_FLOW_RATE_CL_ML_MIN])
-        dosing_ph_duration_s = chemistry.calculate_dose_duration_s(dosing_ph_ml, flow_ph)
-        dosing_cl_duration_s = chemistry.calculate_dose_duration_s(dosing_cl_ml, flow_cl)
+        dosing_ph_duration_s = chemistry.calculate_dose_duration_s(
+            dosing_ph_ml, flow_ph
+        )
+        dosing_cl_duration_s = chemistry.calculate_dose_duration_s(
+            dosing_cl_ml, flow_cl
+        )
 
         # 4 : ajuster la duree min si le dosage planifie depasse la filtration
         durations = filtration.adjust_for_dosing(
@@ -236,7 +240,11 @@ class SmartPoolCoordinator(DataUpdateCoordinator):
         }
         safety_result = safety.evaluate_safety(
             safety_data,
-            {CONF_DELAY_BETWEEN_DOSES_MIN: int(self.config[CONF_DELAY_BETWEEN_DOSES_MIN])},
+            {
+                CONF_DELAY_BETWEEN_DOSES_MIN: int(
+                    self.config[CONF_DELAY_BETWEEN_DOSES_MIN]
+                )
+            },
         )
 
         # Watchdog : couper d'urgence les pompes si force_stop demande
@@ -310,7 +318,9 @@ class SmartPoolCoordinator(DataUpdateCoordinator):
         # Rapport quotidien a l'heure prevue
         await self._async_maybe_daily_report(data, now)
 
-        _LOGGER.debug("Cycle coordinator %s termine, statut=%s", self.name, water_status)
+        _LOGGER.debug(
+            "Cycle coordinator %s termine, statut=%s", self.name, water_status
+        )
         return data
 
     # ------------------------------------------------------------------
@@ -450,7 +460,9 @@ class SmartPoolCoordinator(DataUpdateCoordinator):
                 {"entity_id": self.config[CONF_ENTITY_SWITCH_PH]},
                 blocking=True,
             )
-            duration_s = min(int(self.data["dosing_ph_duration_s"]), WATCHDOG_MAX_SECONDS)
+            duration_s = min(
+                int(self.data["dosing_ph_duration_s"]), WATCHDOG_MAX_SECONDS
+            )
             _LOGGER.info("Pompe pH active pour %s secondes", duration_s)
             await asyncio.sleep(duration_s)
             self._last_dose_ph = datetime.now()
@@ -496,7 +508,9 @@ class SmartPoolCoordinator(DataUpdateCoordinator):
                 {"entity_id": self.config[CONF_ENTITY_SWITCH_CL]},
                 blocking=True,
             )
-            duration_s = min(int(self.data["dosing_cl_duration_s"]), WATCHDOG_MAX_SECONDS)
+            duration_s = min(
+                int(self.data["dosing_cl_duration_s"]), WATCHDOG_MAX_SECONDS
+            )
             _LOGGER.info("Pompe Cl active pour %s secondes", duration_s)
             await asyncio.sleep(duration_s)
             self._last_dose_cl = datetime.now()
