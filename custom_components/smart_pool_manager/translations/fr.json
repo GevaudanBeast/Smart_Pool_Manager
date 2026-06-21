@@ -1,0 +1,103 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Profil de la piscine",
+        "description": "Caracteristiques generales de la piscine et des produits de traitement.",
+        "data": {
+          "name": "Nom affiche",
+          "volume_m3": "Volume (m3)",
+          "treatment_type": "Type de traitement",
+          "ph_minus_concentration_pct": "Concentration pH- (%)",
+          "disinfectant_concentration_pct": "Concentration desinfectant (%)"
+        }
+      },
+      "probe": {
+        "title": "Entites de la sonde",
+        "description": "Entites de la sonde Zigbee 7-en-1. Les champs optionnels peuvent rester vides.",
+        "data": {
+          "entity_ph": "Capteur pH",
+          "entity_orp": "Capteur ORP",
+          "entity_cl": "Capteur Cl",
+          "entity_tds": "Capteur TDS (optionnel)",
+          "entity_salinity": "Capteur salinite (optionnel)",
+          "entity_probe_temperature": "Capteur temperature sonde (optionnel)"
+        }
+      },
+      "dosing": {
+        "title": "Pompes doseuses",
+        "description": "Relais et debits des pompes peristaltiques.",
+        "data": {
+          "entity_switch_ph": "Relais pompe pH-",
+          "entity_switch_cl": "Relais pompe Cl",
+          "entity_number_ph_speed": "Vitesse pompe pH (optionnel)",
+          "entity_number_cl_speed": "Vitesse pompe Cl (optionnel)",
+          "flow_rate_ph_ml_min": "Debit pompe pH (mL/min)",
+          "flow_rate_cl_ml_min": "Debit pompe Cl (mL/min)"
+        }
+      },
+      "system": {
+        "title": "Entites systeme",
+        "description": "Filtration, niveau d'eau, temperature et interface Solar Optimizer.",
+        "data": {
+          "entity_switch_filtration": "Switch filtration",
+          "entity_level_low": "Capteur niveau bas",
+          "entity_water_temperature": "Capteur temperature eau",
+          "entity_so_filtration_duration": "Helper duree filtration (SO)",
+          "entity_so_max_duration": "Helper duree max (SO)"
+        }
+      },
+      "chemistry": {
+        "title": "Consignes chimiques",
+        "description": "Cibles et limites de dosage. Modifiables ensuite via les options.",
+        "data": {
+          "ph_target": "Cible pH",
+          "ph_tolerance": "Tolerance pH",
+          "cl_target_mg_l": "Cible Cl (mg/L)",
+          "cl_tolerance": "Tolerance Cl",
+          "orp_min_mv": "ORP minimum (mV)",
+          "dose_max_ph_ml": "Dose max pH (mL)",
+          "dose_max_cl_ml": "Dose max Cl (mL)",
+          "delay_between_doses_min": "Delai entre doses (min)",
+          "dosing_auto": "Dosage automatique",
+          "entity_notify_primary": "Notification principale",
+          "entity_notify_critical": "Notification critique"
+        }
+      }
+    },
+    "abort": {
+      "already_configured": "Cette piscine est deja configuree."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Consignes chimiques",
+        "description": "Modifier les cibles et limites de dosage sans toucher aux entites.",
+        "data": {
+          "ph_target": "Cible pH",
+          "ph_tolerance": "Tolerance pH",
+          "cl_target_mg_l": "Cible Cl (mg/L)",
+          "cl_tolerance": "Tolerance Cl",
+          "orp_min_mv": "ORP minimum (mV)",
+          "dose_max_ph_ml": "Dose max pH (mL)",
+          "dose_max_cl_ml": "Dose max Cl (mL)",
+          "delay_between_doses_min": "Delai entre doses (min)",
+          "dosing_auto": "Dosage automatique",
+          "entity_notify_primary": "Notification principale",
+          "entity_notify_critical": "Notification critique"
+        }
+      }
+    }
+  },
+  "selector": {
+    "treatment_type": {
+      "options": {
+        "chlore_liquide": "Chlore liquide",
+        "chlore_choc": "Chlore choc",
+        "brome": "Brome",
+        "sel_electrolyse": "Sel / electrolyse"
+      }
+    }
+  }
+}

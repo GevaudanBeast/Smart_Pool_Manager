@@ -1,0 +1,46 @@
+# Validation HACS et hassfest.
+#
+# hassfest verifie que le manifest et la structure de l'integration sont
+# conformes aux regles Home Assistant. L'action HACS verifie que le depot est
+# installable via HACS. Le job tourne a chaque push, chaque PR et une fois par
+# jour pour detecter une rupture liee a une evolution de HA ou de HACS.
+
+name: Validate
+
+on:
+  push:
+  pull_request:
+  schedule:
+    - cron: "0 4 * * *"
+  workflow_dispatch:
+
+jobs:
+  hassfest:
+    name: Hassfest
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Run hassfest
+        uses: home-assistant/actions/hassfest@master
+
+  hacs:
+    name: HACS
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Run HACS validation
+        uses: hacs/action@main
+        with:
+          category: integration
+          # Checks exiges uniquement pour l'inclusion dans le store HACS par
+          # defaut, non pertinents pour une installation en custom repository :
+          #   brands      : domaine non present dans home-assistant/brands
+          #                 (necessiterait une PR dans ce depot externe)
+          #   topics      : topics GitHub du depot (a definir dans Settings)
+          #   description : description GitHub du depot (a definir dans Settings)
+          # Pour rendre topics/description conformes plutot que de les ignorer,
+          # renseigner la description et des topics dans les reglages du depot
+          # puis retirer "topics description" de cette ligne.
+          ignore: brands topics description
