@@ -1,0 +1,23 @@
+name: Feature request
+description: Proposer une amelioration pour SmartPoolManager
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Besoin ou probleme
+      description: Quel besoin l'amelioration couvre-t-elle ?
+    validations:
+      required: true
+  - type: textarea
+    id: solution
+    attributes:
+      label: Solution souhaitee
+      description: Decrire la fonctionnalite souhaitee.
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives envisagees
+      description: Autres approches eventuelles.

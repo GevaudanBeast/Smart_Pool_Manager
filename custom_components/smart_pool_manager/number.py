@@ -58,8 +58,12 @@ NUMBERS: tuple[PoolNumberDescription, ...] = (
     PoolNumberDescription(CONF_PH_TARGET, "ph_target", 7.0, 7.8, 0.05, 7.4, "pH"),
     PoolNumberDescription(CONF_CL_TARGET_MG_L, "cl_target", 0.5, 5.0, 0.1, 2.0, "mg/L"),
     PoolNumberDescription(CONF_ORP_MIN_MV, "orp_min", 400, 800, 10, 650, "mV"),
-    PoolNumberDescription(CONF_DOSE_MAX_PH_ML, "dose_max_ph_ml", 10, 500, 10, 100, "mL"),
-    PoolNumberDescription(CONF_DOSE_MAX_CL_ML, "dose_max_cl_ml", 10, 500, 10, 100, "mL"),
+    PoolNumberDescription(
+        CONF_DOSE_MAX_PH_ML, "dose_max_ph_ml", 10, 500, 10, 100, "mL"
+    ),
+    PoolNumberDescription(
+        CONF_DOSE_MAX_CL_ML, "dose_max_cl_ml", 10, 500, 10, 100, "mL"
+    ),
     PoolNumberDescription(
         CONF_DELAY_BETWEEN_DOSES_MIN, "delay_between_doses_min", 30, 480, 10, 60, "min"
     ),
@@ -105,9 +109,7 @@ class SmartPoolNumber(SmartPoolEntity, NumberEntity):
     @property
     def native_value(self) -> float:
         """Valeur courante lue dans la config du coordinator."""
-        return float(
-            self.coordinator.config.get(self._desc.key, self._desc.default)
-        )
+        return float(self.coordinator.config.get(self._desc.key, self._desc.default))
 
     async def async_set_native_value(self, value: float) -> None:
         """Ecrit la nouvelle consigne et la persiste dans les options."""

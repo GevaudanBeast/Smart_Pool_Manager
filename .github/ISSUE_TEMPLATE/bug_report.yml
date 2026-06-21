@@ -1,0 +1,38 @@
+name: Bug report
+description: Signaler un probleme avec SmartPoolManager
+labels: ["bug"]
+body:
+  - type: textarea
+    id: description
+    attributes:
+      label: Description du probleme
+      description: Decrire clairement le comportement observe.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Etapes pour reproduire
+      description: Comment reproduire le probleme.
+    validations:
+      required: true
+  - type: input
+    id: ha_version
+    attributes:
+      label: Version de Home Assistant
+      placeholder: "ex: 2025.6.0"
+    validations:
+      required: true
+  - type: input
+    id: integration_version
+    attributes:
+      label: Version de SmartPoolManager
+      placeholder: "ex: 1.0.0"
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Journaux pertinents
+      description: Coller les logs Home Assistant lies a smart_pool_manager.
+      render: shell
