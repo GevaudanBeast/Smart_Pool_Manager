@@ -15,6 +15,45 @@ views:
   - title: Piscine
     path: pool
     cards:
+      # Carte 0 - Recommandations manuelles (conseil en grammes)
+      - type: entities
+        title: Que faire maintenant
+        entities:
+          - entity: sensor.smart_pool_manager_<pool_slug>_etat_global
+            name: Etat global
+          - entity: sensor.smart_pool_manager_<pool_slug>_prochaine_action
+            name: Action prioritaire
+          - entity: sensor.smart_pool_manager_<pool_slug>_filtration_conseillee
+            name: Filtration conseillee
+
+      - type: markdown
+        title: Recommandations detaillees
+        content: >
+          {% set reco =
+          states('sensor.smart_pool_manager_<pool_slug>_recommandations') %}
+
+          {% if reco not in ['', 'unknown', 'unavailable'] %}
+
+          {{ reco }}
+
+          {% else %}
+
+          Tout est bon, aucune action a faire.
+
+          {% endif %}
+
+      - type: conditional
+        conditions:
+          - entity: sensor.smart_pool_manager_<pool_slug>_etat_global
+            state: action_requise
+        card:
+          type: button
+          name: Recalculer et notifier
+          icon: mdi:bell-ring-outline
+          tap_action:
+            action: call-service
+            service: smart_pool_manager.notifier
+
       # Carte 1 - Etat general
       - type: entities
         title: Etat general

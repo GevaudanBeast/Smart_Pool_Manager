@@ -40,6 +40,10 @@ class PoolSensorDescription:
     unit: str | None = None
     device_class: SensorDeviceClass | None = None
     is_json: bool = False
+    # Cle du dict coordinator contenant les attributs supplementaires (ou None).
+    attrs_key: str | None = None
+    # Icone Material Design optionnelle.
+    icon: str | None = None
 
 
 # Definition declarative de tous les sensors a exposer.
@@ -76,6 +80,21 @@ SENSORS: tuple[PoolSensorDescription, ...] = (
         "last_dose_cl", "last_dose_cl", None, SensorDeviceClass.TIMESTAMP
     ),
     PoolSensorDescription("alerts", "alerts", is_json=True),
+    # --- Recommandations manuelles (conseil utilisateur en grammes) ---
+    PoolSensorDescription(
+        "reco_filtration_h",
+        "filtration_conseillee",
+        "h",
+        attrs_key="reco_filtration_attrs",
+        icon="mdi:timer-cog-outline",
+    ),
+    PoolSensorDescription("reco_etat_global", "etat_global", icon="mdi:pool"),
+    PoolSensorDescription(
+        "reco_prochaine_action", "prochaine_action", icon="mdi:clipboard-alert-outline"
+    ),
+    PoolSensorDescription(
+        "reco_recommandations", "recommandations", icon="mdi:clipboard-list-outline"
+    ),
 )
 
 
@@ -102,6 +121,8 @@ class SmartPoolSensor(SmartPoolEntity, SensorEntity):
             self._attr_native_unit_of_measurement = description.unit
         if description.device_class:
             self._attr_device_class = description.device_class
+        if description.icon:
+            self._attr_icon = description.icon
         # Les valeurs numeriques de mesure recoivent une state_class measurement.
         if description.device_class == SensorDeviceClass.TEMPERATURE:
             self._attr_state_class = SensorStateClass.MEASUREMENT
@@ -114,3 +135,14 @@ class SmartPoolSensor(SmartPoolEntity, SensorEntity):
             # Serialise la liste d'alertes en chaine JSON exploitable cote UI.
             return json.dumps(value or [])
         return value
+
+    @property
+    def extra_state_attributes(self) -> dict | None:
+        """Expose des attributs supplementaires si la description en definit.
+
+        Sert notamment a publier la formule de calcul de la filtration
+        conseillee sur le capteur dedie.
+        """
+        if not self._desc.attrs_key:
+            return None
+        return self.coordinator.data.get(self._desc.attrs_key)
