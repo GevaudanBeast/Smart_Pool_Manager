@@ -1,6 +1,7 @@
 {
   "domain": "smart_pool_manager",
   "name": "SmartPoolManager",
+  "after_dependencies": ["logbook"],
   "codeowners": ["@GevaudanBeast"],
   "config_flow": true,
   "dependencies": [],
