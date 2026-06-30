@@ -15,7 +15,12 @@ from __future__ import annotations
 import logging
 
 import voluptuous as vol
-from homeassistant.core import HomeAssistant, ServiceCall
+from homeassistant.core import (
+    HomeAssistant,
+    ServiceCall,
+    ServiceResponse,
+    SupportsResponse,
+)
 from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers import config_validation as cv
 
@@ -24,6 +29,8 @@ from .const import (
     FILTRATION_MODES,
     SERVICE_DOSE_CL,
     SERVICE_DOSE_PH,
+    SERVICE_EVALUER,
+    SERVICE_NOTIFIER,
     SERVICE_RELOAD,
     SERVICE_SET_FILTRATION_MODE,
 )
@@ -103,6 +110,18 @@ async def async_setup_services(hass: HomeAssistant) -> None:
         for entry in entries:
             await hass.config_entries.async_reload(entry.entry_id)
 
+    async def async_evaluer(call: ServiceCall) -> ServiceResponse:
+        """Recalcule immediatement et renvoie le texte de recommandation."""
+        coordinator = _resolve_coordinator(hass, call)
+        _LOGGER.info("Service evaluer appele")
+        return await coordinator.async_evaluate()
+
+    async def async_notifier(call: ServiceCall) -> ServiceResponse:
+        """Declenche l'envoi d'une notification avec le texte de reco."""
+        coordinator = _resolve_coordinator(hass, call)
+        _LOGGER.info("Service notifier appele")
+        return await coordinator.async_send_reco_notification()
+
     hass.services.async_register(
         DOMAIN, SERVICE_DOSE_PH, async_dose_ph, schema=DOSE_SCHEMA
     )
@@ -116,6 +135,20 @@ async def async_setup_services(hass: HomeAssistant) -> None:
         schema=SET_MODE_SCHEMA,
     )
     hass.services.async_register(DOMAIN, SERVICE_RELOAD, async_reload)
+    hass.services.async_register(
+        DOMAIN,
+        SERVICE_EVALUER,
+        async_evaluer,
+        schema=DOSE_SCHEMA,
+        supports_response=SupportsResponse.OPTIONAL,
+    )
+    hass.services.async_register(
+        DOMAIN,
+        SERVICE_NOTIFIER,
+        async_notifier,
+        schema=DOSE_SCHEMA,
+        supports_response=SupportsResponse.OPTIONAL,
+    )
     _LOGGER.debug("Services SmartPoolManager enregistres")
 
 
@@ -126,6 +159,8 @@ async def async_unload_services(hass: HomeAssistant) -> None:
         SERVICE_DOSE_CL,
         SERVICE_SET_FILTRATION_MODE,
         SERVICE_RELOAD,
+        SERVICE_EVALUER,
+        SERVICE_NOTIFIER,
     ):
         if hass.services.has_service(DOMAIN, service):
             hass.services.async_remove(DOMAIN, service)

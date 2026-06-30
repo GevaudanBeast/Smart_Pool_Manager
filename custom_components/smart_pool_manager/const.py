@@ -69,6 +69,23 @@ CONF_DOSING_AUTO = "dosing_auto"
 CONF_ENTITY_NOTIFY_PRIMARY = "entity_notify_primary"
 CONF_ENTITY_NOTIFY_CRITICAL = "entity_notify_critical"
 
+# Cles de configuration (etape 6 : recommandations manuelles en grammes)
+# Cibles et seuils dedies au conseil manuel (independants du dosage auto).
+CONF_RECO_PH_TARGET = "reco_ph_target"
+CONF_RECO_PH_IDEAL_MIN = "reco_ph_ideal_min"
+CONF_RECO_PH_IDEAL_MAX = "reco_ph_ideal_max"
+CONF_RECO_CL_MIN = "reco_cl_min"
+CONF_RECO_CL_MAX = "reco_cl_max"
+CONF_RECO_CL_SHOCK = "reco_cl_shock"
+# Doses unitaires des produits du commerce (grammes), parametrables.
+CONF_RECO_DOSE_PH_MINUS_G = "reco_dose_ph_minus_g"
+CONF_RECO_DOSE_PH_PLUS_G = "reco_dose_ph_plus_g"
+CONF_RECO_DOSE_CHOC_G = "reco_dose_choc_g"
+CONF_RECO_GALET_G = "reco_galet_g"
+CONF_RECO_REF_VOLUME_M3 = "reco_ref_volume_m3"
+# Service de notification cible pour les recommandations (defaut persistante).
+CONF_RECO_NOTIFY_SERVICE = "reco_notify_service"
+
 # Valeurs par defaut (profil)
 DEFAULT_VOLUME_M3 = 16.0
 DEFAULT_PH_MINUS_CONCENTRATION_PCT = 14.0
@@ -110,6 +127,23 @@ DEFAULT_DOSING_AUTO = True
 DEFAULT_ENTITY_NOTIFY_PRIMARY = "notify.mobile_app_owner"
 DEFAULT_ENTITY_NOTIFY_CRITICAL = "notify.mobile_app_secondary"
 
+# Valeurs par defaut (recommandations manuelles)
+# Cibles chlore classique : pH ideal 7,0 a 7,4 (pivot 7,2), chlore 1 a 3 mg/L.
+DEFAULT_RECO_PH_TARGET = 7.2
+DEFAULT_RECO_PH_IDEAL_MIN = 7.0
+DEFAULT_RECO_PH_IDEAL_MAX = 7.4
+DEFAULT_RECO_CL_MIN = 1.0
+DEFAULT_RECO_CL_MAX = 3.0
+DEFAULT_RECO_CL_SHOCK = 0.5
+# Ordres de grandeur pour 16 m3 (galet de 200 g, paliers de 0,1 de pH).
+DEFAULT_RECO_DOSE_PH_MINUS_G = 160
+DEFAULT_RECO_DOSE_PH_PLUS_G = 160
+DEFAULT_RECO_DOSE_CHOC_G = 320
+DEFAULT_RECO_GALET_G = 200
+DEFAULT_RECO_REF_VOLUME_M3 = 16.0
+# Par defaut on n'envoie qu'une notification persistante (pas d'appareil code en dur).
+DEFAULT_RECO_NOTIFY_SERVICE = "persistent_notification"
+
 # Options du type de traitement (etape 1)
 TREATMENT_TYPES = [
     "chlore_liquide",
@@ -136,6 +170,9 @@ SERVICE_DOSE_PH = "dose_ph"
 SERVICE_DOSE_CL = "dose_cl"
 SERVICE_SET_FILTRATION_MODE = "set_filtration_mode"
 SERVICE_RELOAD = "reload"
+# Services lies aux recommandations manuelles.
+SERVICE_EVALUER = "evaluer"
+SERVICE_NOTIFIER = "notifier"
 
 # Modes de filtration acceptes par le service set_filtration_mode
 FILTRATION_MODES = ["auto", "force_on", "force_off", "winter"]

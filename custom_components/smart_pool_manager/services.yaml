@@ -47,3 +47,25 @@ set_filtration_mode:
 reload:
   name: Reload
   description: "Recharger la configuration sans redemarrer HA"
+
+evaluer:
+  name: Evaluer
+  description: "Recalcule immediatement les recommandations et renvoie le texte"
+  fields:
+    entry_id:
+      name: Entry ID
+      description: "ID entree config (optionnel si une seule piscine)"
+      required: false
+      selector:
+        text:
+
+notifier:
+  name: Notifier
+  description: "Envoie une notification avec les recommandations courantes"
+  fields:
+    entry_id:
+      name: Entry ID
+      description: "ID entree config (optionnel si une seule piscine)"
+      required: false
+      selector:
+        text:

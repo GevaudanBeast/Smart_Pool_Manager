@@ -14,11 +14,11 @@
       },
       "probe": {
         "title": "Entites de la sonde",
-        "description": "Entites de la sonde Zigbee 7-en-1. Les champs optionnels peuvent rester vides.",
+        "description": "Entites de la sonde Zigbee. Les champs optionnels peuvent rester vides.",
         "data": {
           "entity_ph": "Capteur pH",
           "entity_orp": "Capteur ORP",
-          "entity_cl": "Capteur Cl",
+          "entity_cl": "Capteur chlore libre",
           "entity_tds": "Capteur TDS (optionnel)",
           "entity_salinity": "Capteur salinite (optionnel)",
           "entity_probe_temperature": "Capteur temperature sonde (optionnel)"
@@ -26,7 +26,7 @@
       },
       "dosing": {
         "title": "Pompes doseuses",
-        "description": "Relais et debits des pompes peristaltiques.",
+        "description": "Relais et debits des pompes peristaltiques. Laissez vide si vous dosez a la main.",
         "data": {
           "entity_switch_ph": "Relais pompe pH-",
           "entity_switch_cl": "Relais pompe Cl",
@@ -48,8 +48,8 @@
         }
       },
       "chemistry": {
-        "title": "Consignes chimiques",
-        "description": "Cibles et limites de dosage. Modifiables ensuite via les options.",
+        "title": "Consignes chimiques (dosage auto)",
+        "description": "Cibles et limites du dosage automatique par pompes. Modifiables ensuite via les options.",
         "data": {
           "ph_target": "Cible pH",
           "ph_tolerance": "Tolerance pH",
@@ -63,6 +63,24 @@
           "entity_notify_primary": "Notification principale",
           "entity_notify_critical": "Notification critique"
         }
+      },
+      "reco": {
+        "title": "Recommandations manuelles (en grammes)",
+        "description": "Conseils chiffres pour un dosage a la main. Toutes les doses sont des ordres de grandeur a verifier sur l'emballage.",
+        "data": {
+          "reco_ph_target": "Cible pH (pivot du calcul)",
+          "reco_ph_ideal_min": "pH ideal minimum",
+          "reco_ph_ideal_max": "pH ideal maximum",
+          "reco_cl_min": "Chlore libre minimum (mg/L)",
+          "reco_cl_max": "Chlore libre maximum (mg/L)",
+          "reco_cl_shock": "Seuil chlore choc (mg/L)",
+          "reco_dose_ph_minus_g": "Dose pH moins par palier de 0,1 (g)",
+          "reco_dose_ph_plus_g": "Dose pH plus par palier de 0,1 (g)",
+          "reco_dose_choc_g": "Dose chlore choc (g)",
+          "reco_galet_g": "Masse d'un galet de chlore lent (g)",
+          "reco_ref_volume_m3": "Volume de reference des doses (m3)",
+          "reco_notify_service": "Service de notification (defaut: persistent_notification)"
+        }
       }
     },
     "abort": {
@@ -72,8 +90,15 @@
   "options": {
     "step": {
       "init": {
+        "title": "Reglages SmartPoolManager",
+        "menu_options": {
+          "chemistry": "Consignes chimiques (dosage auto)",
+          "reco": "Recommandations manuelles (grammes)"
+        }
+      },
+      "chemistry": {
         "title": "Consignes chimiques",
-        "description": "Modifier les cibles et limites de dosage sans toucher aux entites.",
+        "description": "Modifier les cibles et limites du dosage automatique.",
         "data": {
           "ph_target": "Cible pH",
           "ph_tolerance": "Tolerance pH",
@@ -86,6 +111,24 @@
           "dosing_auto": "Dosage automatique",
           "entity_notify_primary": "Notification principale",
           "entity_notify_critical": "Notification critique"
+        }
+      },
+      "reco": {
+        "title": "Recommandations manuelles",
+        "description": "Modifier les doses unitaires, les cibles et le service de notification.",
+        "data": {
+          "reco_ph_target": "Cible pH (pivot du calcul)",
+          "reco_ph_ideal_min": "pH ideal minimum",
+          "reco_ph_ideal_max": "pH ideal maximum",
+          "reco_cl_min": "Chlore libre minimum (mg/L)",
+          "reco_cl_max": "Chlore libre maximum (mg/L)",
+          "reco_cl_shock": "Seuil chlore choc (mg/L)",
+          "reco_dose_ph_minus_g": "Dose pH moins par palier de 0,1 (g)",
+          "reco_dose_ph_plus_g": "Dose pH plus par palier de 0,1 (g)",
+          "reco_dose_choc_g": "Dose chlore choc (g)",
+          "reco_galet_g": "Masse d'un galet de chlore lent (g)",
+          "reco_ref_volume_m3": "Volume de reference des doses (m3)",
+          "reco_notify_service": "Service de notification (defaut: persistent_notification)"
         }
       }
     }

@@ -14,12 +14,12 @@ from __future__ import annotations
 
 import asyncio
 import logging
-from datetime import datetime, timedelta
+from datetime import datetime
 
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 
-from .calculations import chemistry, filtration, safety
+from .calculations import chemistry, filtration, recommendations, safety
 from .const import (
     CONF_CL_TARGET_MG_L,
     CONF_CL_TOLERANCE,
@@ -50,9 +50,32 @@ from .const import (
     CONF_PH_MINUS_CONCENTRATION_PCT,
     CONF_PH_TARGET,
     CONF_PH_TOLERANCE,
+    CONF_RECO_CL_MAX,
+    CONF_RECO_CL_MIN,
+    CONF_RECO_CL_SHOCK,
+    CONF_RECO_DOSE_CHOC_G,
+    CONF_RECO_DOSE_PH_MINUS_G,
+    CONF_RECO_DOSE_PH_PLUS_G,
+    CONF_RECO_GALET_G,
+    CONF_RECO_NOTIFY_SERVICE,
+    CONF_RECO_PH_IDEAL_MAX,
+    CONF_RECO_PH_IDEAL_MIN,
+    CONF_RECO_PH_TARGET,
+    CONF_RECO_REF_VOLUME_M3,
     CONF_VOLUME_M3,
-    COORDINATOR_UPDATE_INTERVAL,
     DAILY_REPORT_HOUR,
+    DEFAULT_RECO_CL_MAX,
+    DEFAULT_RECO_CL_MIN,
+    DEFAULT_RECO_CL_SHOCK,
+    DEFAULT_RECO_DOSE_CHOC_G,
+    DEFAULT_RECO_DOSE_PH_MINUS_G,
+    DEFAULT_RECO_DOSE_PH_PLUS_G,
+    DEFAULT_RECO_GALET_G,
+    DEFAULT_RECO_NOTIFY_SERVICE,
+    DEFAULT_RECO_PH_IDEAL_MAX,
+    DEFAULT_RECO_PH_IDEAL_MIN,
+    DEFAULT_RECO_PH_TARGET,
+    DEFAULT_RECO_REF_VOLUME_M3,
     DOMAIN,
     FALLBACK_WATER_TEMPERATURE,
     PROBE_UNAVAILABLE_ALERT_SECONDS,
@@ -102,11 +125,15 @@ class SmartPoolCoordinator(DataUpdateCoordinator):
             config: dict fusionne data + options de l'entree.
             entry_id: identifiant de l'entree de configuration.
         """
+        # update_interval=None : pas de polling periodique. Le recalcul est
+        # declenche uniquement sur changement d'etat des capteurs sources
+        # (ecoute mise en place dans __init__.py) et par un declencheur
+        # horaire pour le rapport quotidien.
         super().__init__(
             hass,
             _LOGGER,
             name=f"{DOMAIN}_{config.get(CONF_NAME, 'pool')}",
-            update_interval=timedelta(seconds=COORDINATOR_UPDATE_INTERVAL),
+            update_interval=None,
         )
         self.config = config
         self.entry_id = entry_id
@@ -124,6 +151,11 @@ class SmartPoolCoordinator(DataUpdateCoordinator):
         self._known_alerts: set[str] = set()
         self._notified_orp_critical = False
         self._notified_probe_unavailable = False
+
+        # Suivi des recommandations manuelles : dernier etat global notifie et
+        # derniere action prioritaire journalisee (pour ne pas spammer).
+        self._reco_last_etat: str | None = None
+        self._reco_last_action: str | None = None
 
     # ------------------------------------------------------------------
     # Cycle principal
@@ -311,6 +343,25 @@ class SmartPoolCoordinator(DataUpdateCoordinator):
         )
         data["alerts"] = alerts
         data["alert_active"] = len(alerts) > 0
+
+        # 9bis : recommandations manuelles en grammes (conseiller utilisateur)
+        reco = recommendations.compute_recommendations(
+            {
+                "ph": raw["ph"],
+                "cl": raw["cl"],
+                "orp": raw["orp"],
+                "temperature": raw["water_temperature"],
+            },
+            self._reco_params(),
+        )
+        data["reco_etat_global"] = reco["etat_global"]
+        data["reco_prochaine_action"] = reco["prochaine_action"]
+        data["reco_recommandations"] = reco["texte"]
+        data["reco_filtration_h"] = reco["filtration_h"]
+        data["reco_filtration_attrs"] = {"formule": reco["filtration_formule"]}
+
+        # Notification + journalisation des recommandations (transition d'etat).
+        await self._async_handle_reco(reco)
 
         # 10 : notifications evenementielles
         await self._async_handle_notifications(data, orp_status, raw, now)
@@ -566,6 +617,164 @@ class SmartPoolCoordinator(DataUpdateCoordinator):
             {"entity_id": self.config[CONF_ENTITY_SWITCH_FILTRATION]},
             blocking=True,
         )
+
+    # ------------------------------------------------------------------
+    # Recommandations manuelles (conseil en grammes)
+    # ------------------------------------------------------------------
+
+    def _reco_params(self) -> dict:
+        """Assemble les reglages utilises par le moteur de recommandations.
+
+        Toutes les valeurs viennent de la configuration, avec repli sur les
+        defauts si l'entree a ete creee avant l'ajout de ces options (retro
+        compatibilite : aucune reconfiguration forcee).
+        """
+        cfg = self.config
+        return {
+            "ph_target": float(cfg.get(CONF_RECO_PH_TARGET, DEFAULT_RECO_PH_TARGET)),
+            "ph_ideal_min": float(
+                cfg.get(CONF_RECO_PH_IDEAL_MIN, DEFAULT_RECO_PH_IDEAL_MIN)
+            ),
+            "ph_ideal_max": float(
+                cfg.get(CONF_RECO_PH_IDEAL_MAX, DEFAULT_RECO_PH_IDEAL_MAX)
+            ),
+            "cl_min": float(cfg.get(CONF_RECO_CL_MIN, DEFAULT_RECO_CL_MIN)),
+            "cl_max": float(cfg.get(CONF_RECO_CL_MAX, DEFAULT_RECO_CL_MAX)),
+            "cl_shock": float(cfg.get(CONF_RECO_CL_SHOCK, DEFAULT_RECO_CL_SHOCK)),
+            "orp_min": float(cfg.get(CONF_ORP_MIN_MV, 650)),
+            "dose_ph_minus_g": float(
+                cfg.get(CONF_RECO_DOSE_PH_MINUS_G, DEFAULT_RECO_DOSE_PH_MINUS_G)
+            ),
+            "dose_ph_plus_g": float(
+                cfg.get(CONF_RECO_DOSE_PH_PLUS_G, DEFAULT_RECO_DOSE_PH_PLUS_G)
+            ),
+            "dose_choc_g": float(
+                cfg.get(CONF_RECO_DOSE_CHOC_G, DEFAULT_RECO_DOSE_CHOC_G)
+            ),
+            "galet_g": float(cfg.get(CONF_RECO_GALET_G, DEFAULT_RECO_GALET_G)),
+            "volume_m3": float(cfg.get(CONF_VOLUME_M3, DEFAULT_RECO_REF_VOLUME_M3)),
+            "ref_volume_m3": float(
+                cfg.get(CONF_RECO_REF_VOLUME_M3, DEFAULT_RECO_REF_VOLUME_M3)
+            ),
+        }
+
+    def _reco_title(self) -> str:
+        """Titre court et lisible des notifications de recommandation."""
+        return f"Piscine {self.config.get(CONF_NAME, 'piscine')} : action a faire"
+
+    async def _async_handle_reco(self, reco: dict) -> None:
+        """Notifie et journalise les recommandations selon les transitions.
+
+        - Notification (persistante + mobile) uniquement quand l'etat global
+          PASSE a action_requise (evite de renotifier a chaque cycle).
+        - Journalisation logbook a chaque changement d'action prioritaire.
+        """
+        etat = reco["etat_global"]
+        action = reco["prochaine_action"]
+
+        # Notification sur transition vers action_requise.
+        if etat == "action_requise" and self._reco_last_etat != "action_requise":
+            await self._async_notify_reco(self._reco_title(), reco["texte"])
+        self._reco_last_etat = etat
+
+        # Journalisation des actions recommandees (changement d'action).
+        if action and action != self._reco_last_action:
+            self._async_log_reco(action)
+        self._reco_last_action = action
+
+    async def _async_notify_reco(self, title: str, message: str) -> None:
+        """Envoie la notification de recommandation.
+
+        Toujours une notification persistante dans Home Assistant. Si un
+        service de notification mobile est configure (different de la
+        persistante), il est appele en plus. Aucun appareil n'est code en dur.
+        """
+        if not message:
+            message = "Aucune action requise pour le moment."
+
+        # 1) Notification persistante (toujours).
+        try:
+            await self.hass.services.async_call(
+                "persistent_notification",
+                "create",
+                {
+                    "title": title,
+                    "message": message,
+                    "notification_id": f"{DOMAIN}_{self.entry_id}_reco",
+                },
+                blocking=False,
+            )
+        except Exception as err:  # pragma: no cover - defensif
+            _LOGGER.error("Echec notification persistante reco: %s", err)
+
+        # 2) Notification mobile si un service est configure.
+        service = str(
+            self.config.get(CONF_RECO_NOTIFY_SERVICE, DEFAULT_RECO_NOTIFY_SERVICE)
+        ).strip()
+        if service and service not in ("persistent_notification",):
+            target = service.replace("notify.", "")
+            try:
+                await self.hass.services.async_call(
+                    "notify",
+                    target,
+                    {"title": title, "message": message},
+                    blocking=False,
+                )
+            except Exception as err:  # pragma: no cover - defensif
+                _LOGGER.error("Echec notification mobile reco vers %s: %s", target, err)
+
+    def _async_log_reco(self, action: str) -> None:
+        """Journalise l'action recommandee dans le logbook de Home Assistant."""
+        try:
+            from homeassistant.components.logbook import async_log_entry
+
+            async_log_entry(
+                self.hass,
+                self.config.get(CONF_NAME, "Piscine"),
+                f"Recommandation : {action}",
+                DOMAIN,
+            )
+        except Exception as err:  # pragma: no cover - defensif
+            _LOGGER.debug("Journalisation logbook indisponible: %s", err)
+
+    async def async_evaluate(self) -> dict:
+        """Recalcule immediatement et renvoie le resume des recommandations.
+
+        Utilise par le service smart_pool_manager.evaluer.
+        """
+        await self.async_refresh()
+        return {
+            "etat_global": self.data.get("reco_etat_global"),
+            "prochaine_action": self.data.get("reco_prochaine_action"),
+            "recommandations": self.data.get("reco_recommandations") or "",
+            "filtration_conseillee_h": self.data.get("reco_filtration_h"),
+        }
+
+    async def async_send_reco_notification(self) -> dict:
+        """Envoie une notification avec le texte de recommandation courant.
+
+        Utilise par le service smart_pool_manager.notifier.
+        """
+        texte = (self.data or {}).get("reco_recommandations") or ""
+        await self._async_notify_reco(self._reco_title(), texte)
+        return {"recommandations": texte}
+
+    def source_entities(self) -> list[str]:
+        """Liste les entites sources a surveiller pour declencher un recalcul."""
+        keys = (
+            CONF_ENTITY_PH,
+            CONF_ENTITY_ORP,
+            CONF_ENTITY_CL,
+            CONF_ENTITY_TDS,
+            CONF_ENTITY_SALINITY,
+            CONF_ENTITY_PROBE_TEMPERATURE,
+            CONF_ENTITY_WATER_TEMPERATURE,
+            CONF_ENTITY_LEVEL_LOW,
+            CONF_ENTITY_SWITCH_FILTRATION,
+        )
+        entities = [self.config.get(key) for key in keys]
+        # On retire les valeurs absentes et les doublons en gardant l'ordre.
+        return list(dict.fromkeys(e for e in entities if e))
 
     # ------------------------------------------------------------------
     # Alertes
