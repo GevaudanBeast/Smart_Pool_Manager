@@ -65,6 +65,18 @@ from .const import (
     CONF_PH_MINUS_CONCENTRATION_PCT,
     CONF_PH_TARGET,
     CONF_PH_TOLERANCE,
+    CONF_RECO_CL_MAX,
+    CONF_RECO_CL_MIN,
+    CONF_RECO_CL_SHOCK,
+    CONF_RECO_DOSE_CHOC_G,
+    CONF_RECO_DOSE_PH_MINUS_G,
+    CONF_RECO_DOSE_PH_PLUS_G,
+    CONF_RECO_GALET_G,
+    CONF_RECO_NOTIFY_SERVICE,
+    CONF_RECO_PH_IDEAL_MAX,
+    CONF_RECO_PH_IDEAL_MIN,
+    CONF_RECO_PH_TARGET,
+    CONF_RECO_REF_VOLUME_M3,
     CONF_TREATMENT_TYPE,
     CONF_VOLUME_M3,
     DEFAULT_CL_TARGET_MG_L,
@@ -86,6 +98,18 @@ from .const import (
     DEFAULT_PH_MINUS_CONCENTRATION_PCT,
     DEFAULT_PH_TARGET,
     DEFAULT_PH_TOLERANCE,
+    DEFAULT_RECO_CL_MAX,
+    DEFAULT_RECO_CL_MIN,
+    DEFAULT_RECO_CL_SHOCK,
+    DEFAULT_RECO_DOSE_CHOC_G,
+    DEFAULT_RECO_DOSE_PH_MINUS_G,
+    DEFAULT_RECO_DOSE_PH_PLUS_G,
+    DEFAULT_RECO_GALET_G,
+    DEFAULT_RECO_NOTIFY_SERVICE,
+    DEFAULT_RECO_PH_IDEAL_MAX,
+    DEFAULT_RECO_PH_IDEAL_MIN,
+    DEFAULT_RECO_PH_TARGET,
+    DEFAULT_RECO_REF_VOLUME_M3,
     DEFAULT_VOLUME_M3,
     DOMAIN,
     TREATMENT_TYPES,
@@ -188,8 +212,121 @@ def _step5_schema(defaults: dict[str, Any]) -> vol.Schema:
     )
 
 
+def _reco_schema(defaults: dict[str, Any]) -> vol.Schema:
+    """Construit le schema de l'etape recommandations manuelles (etape 6).
+
+    Regroupe les cibles dediees au conseil manuel, les doses unitaires des
+    produits en grammes et le service de notification cible. Partage entre le
+    ConfigFlow et l'OptionsFlow.
+    """
+    return vol.Schema(
+        {
+            vol.Required(
+                CONF_RECO_PH_TARGET,
+                default=defaults.get(CONF_RECO_PH_TARGET, DEFAULT_RECO_PH_TARGET),
+            ): NumberSelector(
+                NumberSelectorConfig(
+                    min=6.8, max=7.6, step=0.05, mode=NumberSelectorMode.BOX
+                )
+            ),
+            vol.Required(
+                CONF_RECO_PH_IDEAL_MIN,
+                default=defaults.get(CONF_RECO_PH_IDEAL_MIN, DEFAULT_RECO_PH_IDEAL_MIN),
+            ): NumberSelector(
+                NumberSelectorConfig(
+                    min=6.5, max=7.4, step=0.05, mode=NumberSelectorMode.BOX
+                )
+            ),
+            vol.Required(
+                CONF_RECO_PH_IDEAL_MAX,
+                default=defaults.get(CONF_RECO_PH_IDEAL_MAX, DEFAULT_RECO_PH_IDEAL_MAX),
+            ): NumberSelector(
+                NumberSelectorConfig(
+                    min=7.0, max=7.8, step=0.05, mode=NumberSelectorMode.BOX
+                )
+            ),
+            vol.Required(
+                CONF_RECO_CL_MIN,
+                default=defaults.get(CONF_RECO_CL_MIN, DEFAULT_RECO_CL_MIN),
+            ): NumberSelector(
+                NumberSelectorConfig(
+                    min=0.1, max=3.0, step=0.1, mode=NumberSelectorMode.BOX
+                )
+            ),
+            vol.Required(
+                CONF_RECO_CL_MAX,
+                default=defaults.get(CONF_RECO_CL_MAX, DEFAULT_RECO_CL_MAX),
+            ): NumberSelector(
+                NumberSelectorConfig(
+                    min=1.0, max=6.0, step=0.1, mode=NumberSelectorMode.BOX
+                )
+            ),
+            vol.Required(
+                CONF_RECO_CL_SHOCK,
+                default=defaults.get(CONF_RECO_CL_SHOCK, DEFAULT_RECO_CL_SHOCK),
+            ): NumberSelector(
+                NumberSelectorConfig(
+                    min=0.0, max=2.0, step=0.1, mode=NumberSelectorMode.BOX
+                )
+            ),
+            vol.Required(
+                CONF_RECO_DOSE_PH_MINUS_G,
+                default=defaults.get(
+                    CONF_RECO_DOSE_PH_MINUS_G, DEFAULT_RECO_DOSE_PH_MINUS_G
+                ),
+            ): NumberSelector(
+                NumberSelectorConfig(
+                    min=10, max=1000, step=10, mode=NumberSelectorMode.BOX
+                )
+            ),
+            vol.Required(
+                CONF_RECO_DOSE_PH_PLUS_G,
+                default=defaults.get(
+                    CONF_RECO_DOSE_PH_PLUS_G, DEFAULT_RECO_DOSE_PH_PLUS_G
+                ),
+            ): NumberSelector(
+                NumberSelectorConfig(
+                    min=10, max=1000, step=10, mode=NumberSelectorMode.BOX
+                )
+            ),
+            vol.Required(
+                CONF_RECO_DOSE_CHOC_G,
+                default=defaults.get(CONF_RECO_DOSE_CHOC_G, DEFAULT_RECO_DOSE_CHOC_G),
+            ): NumberSelector(
+                NumberSelectorConfig(
+                    min=10, max=2000, step=10, mode=NumberSelectorMode.BOX
+                )
+            ),
+            vol.Required(
+                CONF_RECO_GALET_G,
+                default=defaults.get(CONF_RECO_GALET_G, DEFAULT_RECO_GALET_G),
+            ): NumberSelector(
+                NumberSelectorConfig(
+                    min=50, max=500, step=10, mode=NumberSelectorMode.BOX
+                )
+            ),
+            vol.Required(
+                CONF_RECO_REF_VOLUME_M3,
+                default=defaults.get(
+                    CONF_RECO_REF_VOLUME_M3, DEFAULT_RECO_REF_VOLUME_M3
+                ),
+            ): NumberSelector(
+                NumberSelectorConfig(
+                    min=1.0, max=500.0, step=0.5, mode=NumberSelectorMode.BOX
+                )
+            ),
+            vol.Required(
+                CONF_RECO_NOTIFY_SERVICE,
+                default=defaults.get(
+                    CONF_RECO_NOTIFY_SERVICE, DEFAULT_RECO_NOTIFY_SERVICE
+                ),
+            ): TextSelector(),
+        }
+    )
+
+
 class SmartPoolConfigFlow(ConfigFlow, domain=DOMAIN):
-    """Assistant de configuration UI en 5 etapes."""
+    """Assistant de configuration UI en 6 etapes."""
 
     VERSION = 1
 
@@ -333,11 +470,20 @@ class SmartPoolConfigFlow(ConfigFlow, domain=DOMAIN):
         """Cinquieme etape : consignes chimiques (modifiables via options)."""
         if user_input is not None:
             self._data.update(user_input)
+            return await self.async_step_reco()
+
+        return self.async_show_form(step_id="chemistry", data_schema=_step5_schema({}))
+
+    # ----- Etape 6 : recommandations manuelles -----
+    async def async_step_reco(self, user_input: dict[str, Any] | None = None) -> Any:
+        """Sixieme etape : conseil manuel en grammes et service de notification."""
+        if user_input is not None:
+            self._data.update(user_input)
             await self.async_set_unique_id(self._data[CONF_NAME])
             self._abort_if_unique_id_configured()
             return self.async_create_entry(title=self._data[CONF_NAME], data=self._data)
 
-        return self.async_show_form(step_id="chemistry", data_schema=_step5_schema({}))
+        return self.async_show_form(step_id="reco", data_schema=_reco_schema({}))
 
     @staticmethod
     @callback
@@ -357,10 +503,30 @@ class SmartPoolOptionsFlow(OptionsFlow):
         self.config_entry = config_entry
 
     async def async_step_init(self, user_input: dict[str, Any] | None = None) -> Any:
-        """Affiche et enregistre les consignes chimiques modifiables."""
-        if user_input is not None:
-            return self.async_create_entry(title="", data=user_input)
+        """Menu de choix : consignes chimiques ou recommandations manuelles."""
+        return self.async_show_menu(
+            step_id="init",
+            menu_options=["chemistry", "reco"],
+        )
 
-        # Valeurs courantes : options si presentes, sinon data initiale.
+    async def async_step_chemistry(
+        self, user_input: dict[str, Any] | None = None
+    ) -> Any:
+        """Modifie les consignes chimiques (dosage auto)."""
+        if user_input is not None:
+            data = {**self.config_entry.options, **user_input}
+            return self.async_create_entry(title="", data=data)
+
         defaults = {**self.config_entry.data, **self.config_entry.options}
-        return self.async_show_form(step_id="init", data_schema=_step5_schema(defaults))
+        return self.async_show_form(
+            step_id="chemistry", data_schema=_step5_schema(defaults)
+        )
+
+    async def async_step_reco(self, user_input: dict[str, Any] | None = None) -> Any:
+        """Modifie les reglages des recommandations manuelles."""
+        if user_input is not None:
+            data = {**self.config_entry.options, **user_input}
+            return self.async_create_entry(title="", data=data)
+
+        defaults = {**self.config_entry.data, **self.config_entry.options}
+        return self.async_show_form(step_id="reco", data_schema=_reco_schema(defaults))

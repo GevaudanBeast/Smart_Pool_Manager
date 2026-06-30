@@ -14,11 +14,11 @@
       },
       "probe": {
         "title": "Probe entities",
-        "description": "Entities of the 7-in-1 Zigbee probe. Optional fields can be left empty.",
+        "description": "Entities of the Zigbee probe. Optional fields can be left empty.",
         "data": {
           "entity_ph": "pH sensor",
           "entity_orp": "ORP sensor",
-          "entity_cl": "Cl sensor",
+          "entity_cl": "Free chlorine sensor",
           "entity_tds": "TDS sensor (optional)",
           "entity_salinity": "Salinity sensor (optional)",
           "entity_probe_temperature": "Probe temperature sensor (optional)"
@@ -26,7 +26,7 @@
       },
       "dosing": {
         "title": "Dosing pumps",
-        "description": "Relays and flow rates of the peristaltic pumps.",
+        "description": "Relays and flow rates of the peristaltic pumps. Leave empty if you dose manually.",
         "data": {
           "entity_switch_ph": "pH- pump relay",
           "entity_switch_cl": "Cl pump relay",
@@ -48,8 +48,8 @@
         }
       },
       "chemistry": {
-        "title": "Chemical setpoints",
-        "description": "Targets and dosing limits. Editable later via options.",
+        "title": "Chemical setpoints (auto dosing)",
+        "description": "Targets and limits for automatic pump dosing. Editable later via options.",
         "data": {
           "ph_target": "pH target",
           "ph_tolerance": "pH tolerance",
@@ -63,6 +63,24 @@
           "entity_notify_primary": "Primary notification",
           "entity_notify_critical": "Critical notification"
         }
+      },
+      "reco": {
+        "title": "Manual recommendations (in grams)",
+        "description": "Quantified advice for manual dosing. All doses are orders of magnitude to check on the product label.",
+        "data": {
+          "reco_ph_target": "pH target (calculation pivot)",
+          "reco_ph_ideal_min": "Ideal pH minimum",
+          "reco_ph_ideal_max": "Ideal pH maximum",
+          "reco_cl_min": "Minimum free chlorine (mg/L)",
+          "reco_cl_max": "Maximum free chlorine (mg/L)",
+          "reco_cl_shock": "Shock chlorine threshold (mg/L)",
+          "reco_dose_ph_minus_g": "pH minus dose per 0.1 step (g)",
+          "reco_dose_ph_plus_g": "pH plus dose per 0.1 step (g)",
+          "reco_dose_choc_g": "Shock chlorine dose (g)",
+          "reco_galet_g": "Slow chlorine tablet mass (g)",
+          "reco_ref_volume_m3": "Reference volume for doses (m3)",
+          "reco_notify_service": "Notification service (default: persistent_notification)"
+        }
       }
     },
     "abort": {
@@ -72,8 +90,15 @@
   "options": {
     "step": {
       "init": {
+        "title": "SmartPoolManager settings",
+        "menu_options": {
+          "chemistry": "Chemical setpoints (auto dosing)",
+          "reco": "Manual recommendations (grams)"
+        }
+      },
+      "chemistry": {
         "title": "Chemical setpoints",
-        "description": "Edit targets and dosing limits without touching the entities.",
+        "description": "Edit automatic dosing targets and limits.",
         "data": {
           "ph_target": "pH target",
           "ph_tolerance": "pH tolerance",
@@ -86,6 +111,24 @@
           "dosing_auto": "Automatic dosing",
           "entity_notify_primary": "Primary notification",
           "entity_notify_critical": "Critical notification"
+        }
+      },
+      "reco": {
+        "title": "Manual recommendations",
+        "description": "Edit unit doses, targets and the notification service.",
+        "data": {
+          "reco_ph_target": "pH target (calculation pivot)",
+          "reco_ph_ideal_min": "Ideal pH minimum",
+          "reco_ph_ideal_max": "Ideal pH maximum",
+          "reco_cl_min": "Minimum free chlorine (mg/L)",
+          "reco_cl_max": "Maximum free chlorine (mg/L)",
+          "reco_cl_shock": "Shock chlorine threshold (mg/L)",
+          "reco_dose_ph_minus_g": "pH minus dose per 0.1 step (g)",
+          "reco_dose_ph_plus_g": "pH plus dose per 0.1 step (g)",
+          "reco_dose_choc_g": "Shock chlorine dose (g)",
+          "reco_galet_g": "Slow chlorine tablet mass (g)",
+          "reco_ref_volume_m3": "Reference volume for doses (m3)",
+          "reco_notify_service": "Notification service (default: persistent_notification)"
         }
       }
     }

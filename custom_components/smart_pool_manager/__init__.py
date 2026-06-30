@@ -13,9 +13,13 @@ from __future__ import annotations
 import logging
 
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.core import HomeAssistant
+from homeassistant.core import Event, HomeAssistant, callback
+from homeassistant.helpers.event import (
+    async_track_state_change_event,
+    async_track_time_change,
+)
 
-from .const import DOMAIN, PLATFORMS
+from .const import DAILY_REPORT_HOUR, DOMAIN, PLATFORMS
 from .coordinator import SmartPoolCoordinator
 from .services import async_setup_services, async_unload_services
 
@@ -43,6 +47,32 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     # Enregistrer les services une seule fois (au premier setup).
     await async_setup_services(hass)
+
+    # Recalcul evenementiel : on recalcule des qu'un capteur source change
+    # d'etat (pas de polling periodique, voir coordinator update_interval=None).
+    @callback
+    def _async_source_changed(event: Event) -> None:
+        """Demande un recalcul quand une entite source change d'etat."""
+        hass.async_create_task(coordinator.async_request_refresh())
+
+    source_entities = coordinator.source_entities()
+    if source_entities:
+        entry.async_on_unload(
+            async_track_state_change_event(hass, source_entities, _async_source_changed)
+        )
+
+    # Declencheur horaire dedie au rapport quotidien (l'absence de polling
+    # periodique ne doit pas empecher l'envoi du rapport a l'heure prevue).
+    @callback
+    def _async_daily_tick(now) -> None:
+        """Force un recalcul a l'heure du rapport quotidien."""
+        hass.async_create_task(coordinator.async_request_refresh())
+
+    entry.async_on_unload(
+        async_track_time_change(
+            hass, _async_daily_tick, hour=DAILY_REPORT_HOUR, minute=0, second=0
+        )
+    )
 
     # Recharger l'entree lorsque les options changent (OptionsFlow).
     entry.async_on_unload(entry.add_update_listener(async_reload_entry))
