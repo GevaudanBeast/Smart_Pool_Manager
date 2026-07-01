@@ -85,13 +85,8 @@ from .const import (
     DEFAULT_DOSE_MAX_CL_ML,
     DEFAULT_DOSE_MAX_PH_ML,
     DEFAULT_DOSING_AUTO,
-    DEFAULT_ENTITY_LEVEL_LOW,
     DEFAULT_ENTITY_NOTIFY_CRITICAL,
     DEFAULT_ENTITY_NOTIFY_PRIMARY,
-    DEFAULT_ENTITY_SO_FILTRATION_DURATION,
-    DEFAULT_ENTITY_SO_MAX_DURATION,
-    DEFAULT_ENTITY_SWITCH_FILTRATION,
-    DEFAULT_ENTITY_WATER_TEMPERATURE,
     DEFAULT_FLOW_RATE_CL_ML_MIN,
     DEFAULT_FLOW_RATE_PH_ML_MIN,
     DEFAULT_ORP_MIN_MV,
@@ -407,10 +402,12 @@ class SmartPoolConfigFlow(ConfigFlow, domain=DOMAIN):
 
         switch_sel = EntitySelector(EntitySelectorConfig(domain="switch"))
         number_sel = EntitySelector(EntitySelectorConfig(domain="number"))
+        # Les pompes doseuses sont facultatives : un utilisateur qui dose a la
+        # main (mode conseil seul) laisse ces champs vides.
         schema = vol.Schema(
             {
-                vol.Required(CONF_ENTITY_SWITCH_PH): switch_sel,
-                vol.Required(CONF_ENTITY_SWITCH_CL): switch_sel,
+                vol.Optional(CONF_ENTITY_SWITCH_PH): switch_sel,
+                vol.Optional(CONF_ENTITY_SWITCH_CL): switch_sel,
                 vol.Optional(CONF_ENTITY_NUMBER_PH_SPEED): number_sel,
                 vol.Optional(CONF_ENTITY_NUMBER_CL_SPEED): number_sel,
                 vol.Required(
@@ -438,27 +435,28 @@ class SmartPoolConfigFlow(ConfigFlow, domain=DOMAIN):
             self._data.update(user_input)
             return await self.async_step_chemistry()
 
+        # Toutes ces entites sont facultatives : elles ne concernent que le
+        # mode automatique et l'interface Solar Optimizer. En mode conseil
+        # seul, on laisse vides celles dont on ne dispose pas. Le capteur de
+        # temperature reste utile pour la filtration conseillee, mais peut etre
+        # fourni par la sonde (etape 2).
         schema = vol.Schema(
             {
-                vol.Required(
-                    CONF_ENTITY_SWITCH_FILTRATION,
-                    default=DEFAULT_ENTITY_SWITCH_FILTRATION,
-                ): EntitySelector(EntitySelectorConfig(domain="switch")),
-                vol.Required(
-                    CONF_ENTITY_LEVEL_LOW, default=DEFAULT_ENTITY_LEVEL_LOW
-                ): EntitySelector(EntitySelectorConfig(domain="binary_sensor")),
-                vol.Required(
-                    CONF_ENTITY_WATER_TEMPERATURE,
-                    default=DEFAULT_ENTITY_WATER_TEMPERATURE,
-                ): EntitySelector(EntitySelectorConfig(domain="sensor")),
-                vol.Required(
-                    CONF_ENTITY_SO_FILTRATION_DURATION,
-                    default=DEFAULT_ENTITY_SO_FILTRATION_DURATION,
-                ): EntitySelector(EntitySelectorConfig(domain="input_number")),
-                vol.Required(
-                    CONF_ENTITY_SO_MAX_DURATION,
-                    default=DEFAULT_ENTITY_SO_MAX_DURATION,
-                ): EntitySelector(EntitySelectorConfig(domain="input_number")),
+                vol.Optional(CONF_ENTITY_SWITCH_FILTRATION): EntitySelector(
+                    EntitySelectorConfig(domain="switch")
+                ),
+                vol.Optional(CONF_ENTITY_LEVEL_LOW): EntitySelector(
+                    EntitySelectorConfig(domain="binary_sensor")
+                ),
+                vol.Optional(CONF_ENTITY_WATER_TEMPERATURE): EntitySelector(
+                    EntitySelectorConfig(domain="sensor")
+                ),
+                vol.Optional(CONF_ENTITY_SO_FILTRATION_DURATION): EntitySelector(
+                    EntitySelectorConfig(domain="input_number")
+                ),
+                vol.Optional(CONF_ENTITY_SO_MAX_DURATION): EntitySelector(
+                    EntitySelectorConfig(domain="input_number")
+                ),
             }
         )
         return self.async_show_form(step_id="system", data_schema=schema)
