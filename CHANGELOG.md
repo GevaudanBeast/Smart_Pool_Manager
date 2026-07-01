@@ -41,6 +41,10 @@ un mode conseil (dosage manuel, quantites en grammes) et un mode automatique
 - **Configuration par l'interface** : assistant en 6 etapes (profil, sonde,
   pompes, systeme, consignes chimiques, recommandations) et OptionsFlow a deux
   entrees. Tout est parametrable, sans YAML.
+- **Installation avec la seule sonde** : les entites de dosage (pompes) et
+  d'automatisation (filtration, niveau, helpers Solar Optimizer) sont
+  facultatives. On peut donc installer l'integration en mode conseil seul,
+  sans aucun materiel de dosage.
 - **Multi-piscines** : plusieurs instances en parallele.
 - **Dashboard Lovelace** pret a importer et traductions francais / anglais.
 
