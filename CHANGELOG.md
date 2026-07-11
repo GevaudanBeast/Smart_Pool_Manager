@@ -4,6 +4,31 @@ Toutes les evolutions notables de SmartPoolManager sont consignees ici.
 Le format suit l'esprit de [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/)
 et le projet utilise un versionnage de type SemVer.
 
+## [Non publie]
+
+### Ajoute
+
+- **Etape Notifications dans les options** : les trois services de
+  notification (`entity_notify_primary`, `entity_notify_critical` et le service
+  des recommandations `reco_notify_service`) sont desormais modifiables depuis
+  l'interface (bouton Configurer > Notifications), sans avoir a supprimer et
+  recreer l'integration.
+
+### Corrige
+
+- **Ouverture des options (erreur 500)** : l'OptionsFlow definissait
+  `self.config_entry` dans son `__init__`, ce que les versions recentes de Home
+  Assistant n'autorisent plus (la propriete `config_entry` est fournie par le
+  framework). Cela renvoyait une « 500 Internal Server Error » a l'ouverture des
+  parametres. Le constructeur a ete retire.
+
+### Modifie
+
+- Les services de notification par defaut pointent desormais vers
+  `notify.notify` (present sur toute installation) au lieu de
+  `notify.mobile_app_owner` / `notify.mobile_app_secondary`, qui n'existaient
+  pas forcement et provoquaient des echecs d'envoi.
+
 ## [0.0.2] - 2026-07-11
 
 ### Corrige

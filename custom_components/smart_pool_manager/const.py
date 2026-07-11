@@ -124,8 +124,10 @@ DEFAULT_DOSE_MAX_PH_ML = 100
 DEFAULT_DOSE_MAX_CL_ML = 100
 DEFAULT_DELAY_BETWEEN_DOSES_MIN = 60
 DEFAULT_DOSING_AUTO = True
-DEFAULT_ENTITY_NOTIFY_PRIMARY = "notify.mobile_app_owner"
-DEFAULT_ENTITY_NOTIFY_CRITICAL = "notify.mobile_app_secondary"
+# Service notify generique, present par defaut sur toute installation HA.
+# Evite de pointer d'emblee vers des services mobile_app inexistants.
+DEFAULT_ENTITY_NOTIFY_PRIMARY = "notify.notify"
+DEFAULT_ENTITY_NOTIFY_CRITICAL = "notify.notify"
 
 # Valeurs par defaut (recommandations manuelles)
 # Cibles chlore classique : pH ideal 7,0 a 7,4 (pivot 7,2), chlore 1 a 3 mg/L.
