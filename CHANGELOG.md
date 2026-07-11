@@ -4,6 +4,45 @@ Toutes les evolutions notables de SmartPoolManager sont consignees ici.
 Le format suit l'esprit de [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/)
 et le projet utilise un versionnage de type SemVer.
 
+## [Non publie]
+
+### Corrige
+
+- **Datetime sans fuseau horaire (dosage).** Les capteurs `last_dose_ph` et
+  `last_dose_cl` ont la `device_class` `timestamp` mais recevaient un
+  `datetime.now()` naif, rejete par Home Assistant (« missing timezone
+  information »). Le coordinator utilise desormais
+  `homeassistant.util.dt.now()` pour tous les horodatages. Le module de calculs
+  `calculations/safety.py` reste pur (aucun import Home Assistant) et gere les
+  deux cas via une fonction `_elapsed_seconds(last)` : comparaison naive si
+  `last.tzinfo is None`, sinon comparaison en UTC. Cela couvre a la fois les
+  tests (datetime naifs) et le runtime (datetime avec fuseau).
+
+- **Recommandations de plus de 255 caracteres.** Un state Home Assistant est
+  limite a 255 caracteres ; au dela, la valeur etait rejetee et le capteur
+  `recommandations` affichait « unknown ». Les capteurs texte tronquent
+  maintenant leur valeur a 252 caracteres suivis de `...`, et exposent le texte
+  integral dans l'attribut `texte_complet` (fusionne avec les attributs
+  existants) lorsque la troncature a lieu.
+
+- **Notifications vers un service inexistant.** Les appels `notify` echouaient
+  en boucle quand la cible configuree n'existait pas. Le coordinator verifie
+  desormais la disponibilite du service via `_notify_target_available(target)`
+  (`hass.services.has_service("notify", target)`) avant chaque appel dans
+  `_async_notify_primary`, `_async_notify_critical` et la partie mobile de
+  `_async_notify_reco`. L'appel est saute si le service manque, et le warning
+  n'est emis qu'une seule fois par cible (memorise dans
+  `self._missing_notify_warned`).
+
+### Connu / a corriger ailleurs (hors composant)
+
+- **Valeurs `number.capteurs_piscine_*` hors plage** (par ex. `ph=1400`,
+  `orp=-1`, `free_chlorine=-1`). Ces erreurs proviennent de la sonde MQTT
+  externe (prefixe `capteurs_piscine`), et non de ce composant. Elles doivent
+  etre corrigees cote firmware ESP ou dans la configuration du MQTT discovery
+  (bornes `min`/`max` et validation des valeurs publiees). Aucun changement de
+  code dans SmartPoolManager n'est requis pour ce point.
+
 ## [0.0.1] - 2026-06-30
 
 Premiere release publique de l'integration Home Assistant SmartPoolManager.

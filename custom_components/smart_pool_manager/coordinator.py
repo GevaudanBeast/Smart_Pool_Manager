@@ -18,6 +18,7 @@ from datetime import datetime
 
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
+from homeassistant.util import dt as dt_util
 
 from .calculations import chemistry, filtration, recommendations, safety
 from .const import (
@@ -157,6 +158,10 @@ class SmartPoolCoordinator(DataUpdateCoordinator):
         self._reco_last_etat: str | None = None
         self._reco_last_action: str | None = None
 
+        # Cibles notify deja signalees comme absentes, pour ne logger le
+        # warning qu'une seule fois par cible (evite le spam en boucle).
+        self._missing_notify_warned: set[str] = set()
+
     # ------------------------------------------------------------------
     # Cycle principal
     # ------------------------------------------------------------------
@@ -247,7 +252,7 @@ class SmartPoolCoordinator(DataUpdateCoordinator):
         water_status = chemistry.global_water_status(ph_status, cl_status, orp_status)
 
         # Duree d'activite des pompes pour le watchdog
-        now = datetime.now()
+        now = dt_util.now()
         ph_running_since = (
             (now - self._dosing_ph_start).total_seconds()
             if self._dosing_ph_start
@@ -488,7 +493,7 @@ class SmartPoolCoordinator(DataUpdateCoordinator):
         """Verifie que le delai minimal entre deux doses est ecoule."""
         if last_dose is None:
             return True
-        elapsed = (datetime.now() - last_dose).total_seconds()
+        elapsed = (dt_util.now() - last_dose).total_seconds()
         return elapsed >= int(self.config[CONF_DELAY_BETWEEN_DOSES_MIN]) * 60
 
     async def _async_dose_ph(self) -> None:
@@ -501,7 +506,7 @@ class SmartPoolCoordinator(DataUpdateCoordinator):
             _LOGGER.warning("Dosage pH ignore : dosage Cl en cours (interlock)")
             return
         self._dosing_ph_running = True
-        self._dosing_ph_start = datetime.now()
+        self._dosing_ph_start = dt_util.now()
         self.data["dosing_ph_running"] = True
         self.data["dosing_ph_running_since_s"] = 0.0
         try:
@@ -516,7 +521,7 @@ class SmartPoolCoordinator(DataUpdateCoordinator):
             )
             _LOGGER.info("Pompe pH active pour %s secondes", duration_s)
             await asyncio.sleep(duration_s)
-            self._last_dose_ph = datetime.now()
+            self._last_dose_ph = dt_util.now()
             self.data["last_dose_ph"] = self._last_dose_ph
             await self._async_notify_primary(
                 title=f"{NAME_TITLE} - pH Dosing",
@@ -549,7 +554,7 @@ class SmartPoolCoordinator(DataUpdateCoordinator):
             _LOGGER.warning("Dosage Cl ignore : dosage pH en cours (interlock)")
             return
         self._dosing_cl_running = True
-        self._dosing_cl_start = datetime.now()
+        self._dosing_cl_start = dt_util.now()
         self.data["dosing_cl_running"] = True
         self.data["dosing_cl_running_since_s"] = 0.0
         try:
@@ -564,7 +569,7 @@ class SmartPoolCoordinator(DataUpdateCoordinator):
             )
             _LOGGER.info("Pompe Cl active pour %s secondes", duration_s)
             await asyncio.sleep(duration_s)
-            self._last_dose_cl = datetime.now()
+            self._last_dose_cl = dt_util.now()
             self.data["last_dose_cl"] = self._last_dose_cl
             await self._async_notify_primary(
                 title=f"{NAME_TITLE} - Cl Dosing",
@@ -713,6 +718,8 @@ class SmartPoolCoordinator(DataUpdateCoordinator):
         ).strip()
         if service and service not in ("persistent_notification",):
             target = service.replace("notify.", "")
+            if not self._notify_target_available(target):
+                return
             try:
                 await self.hass.services.async_call(
                     "notify",
@@ -882,9 +889,35 @@ class SmartPoolCoordinator(DataUpdateCoordinator):
             message=message,
         )
 
+    def _notify_target_available(self, target: str) -> bool:
+        """Indique si le service notify.<target> existe reellement.
+
+        Evite de spammer les logs et Home Assistant quand la cible configuree
+        n'existe pas (par exemple un mobile_app non appaire). Le warning n'est
+        emis qu'une seule fois par cible manquante.
+
+        Args:
+            target: nom du service notify sans le prefixe "notify." (ex:
+                "mobile_app_owner").
+
+        Returns:
+            True si le service est disponible, False sinon.
+        """
+        if self.hass.services.has_service("notify", target):
+            return True
+        if target not in self._missing_notify_warned:
+            self._missing_notify_warned.add(target)
+            _LOGGER.warning(
+                "Service notify.%s introuvable, notifications ignorees",
+                target,
+            )
+        return False
+
     async def _async_notify_primary(self, title: str, message: str) -> None:
         """Envoie une notification au destinataire principal."""
         target = self.config[CONF_ENTITY_NOTIFY_PRIMARY].replace("notify.", "")
+        if not self._notify_target_available(target):
+            return
         try:
             await self.hass.services.async_call(
                 "notify",
@@ -902,6 +935,8 @@ class SmartPoolCoordinator(DataUpdateCoordinator):
             self.config[CONF_ENTITY_NOTIFY_CRITICAL],
         ):
             target = entity.replace("notify.", "")
+            if not self._notify_target_available(target):
+                continue
             try:
                 await self.hass.services.async_call(
                     "notify",
