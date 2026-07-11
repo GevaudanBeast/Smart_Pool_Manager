@@ -25,11 +25,11 @@
         }
       },
       "dosing": {
-        "title": "Dosing pumps",
-        "description": "Relays and flow rates of the peristaltic pumps. Leave empty if you dose manually.",
+        "title": "Dosing pumps (optional)",
+        "description": "Only for automatic dosing. Leave everything empty if you dose manually.",
         "data": {
-          "entity_switch_ph": "pH- pump relay",
-          "entity_switch_cl": "Cl pump relay",
+          "entity_switch_ph": "pH- pump relay (optional)",
+          "entity_switch_cl": "Cl pump relay (optional)",
           "entity_number_ph_speed": "pH pump speed (optional)",
           "entity_number_cl_speed": "Cl pump speed (optional)",
           "flow_rate_ph_ml_min": "pH pump flow rate (mL/min)",
@@ -37,14 +37,14 @@
         }
       },
       "system": {
-        "title": "System entities",
-        "description": "Filtration, water level, temperature and Solar Optimizer interface.",
+        "title": "System entities (optional)",
+        "description": "Filtration, water level, temperature and Solar Optimizer interface. Leave empty what you do not have.",
         "data": {
-          "entity_switch_filtration": "Filtration switch",
-          "entity_level_low": "Low level sensor",
-          "entity_water_temperature": "Water temperature sensor",
-          "entity_so_filtration_duration": "Filtration duration helper (SO)",
-          "entity_so_max_duration": "Max duration helper (SO)"
+          "entity_switch_filtration": "Filtration switch (optional)",
+          "entity_level_low": "Low level sensor (optional)",
+          "entity_water_temperature": "Water temperature sensor (optional)",
+          "entity_so_filtration_duration": "Filtration duration helper SO (optional)",
+          "entity_so_max_duration": "Max duration helper SO (optional)"
         }
       },
       "chemistry": {
@@ -93,7 +93,8 @@
         "title": "SmartPoolManager settings",
         "menu_options": {
           "chemistry": "Chemical setpoints (auto dosing)",
-          "reco": "Manual recommendations (grams)"
+          "reco": "Manual recommendations (grams)",
+          "notifications": "Notifications (notify services)"
         }
       },
       "chemistry": {
@@ -129,6 +130,15 @@
           "reco_galet_g": "Slow chlorine tablet mass (g)",
           "reco_ref_volume_m3": "Reference volume for doses (m3)",
           "reco_notify_service": "Notification service (default: persistent_notification)"
+        }
+      },
+      "notifications": {
+        "title": "Notifications",
+        "description": "Choose the notify services used for alerts and recommendations (for example notify.aurelien_f).",
+        "data": {
+          "entity_notify_primary": "Primary notification (e.g. notify.aurelien_f)",
+          "entity_notify_critical": "Critical notification (e.g. notify.aurelien_f)",
+          "reco_notify_service": "Service for recommendations (default: persistent_notification)"
         }
       }
     }

@@ -4,7 +4,42 @@ Toutes les evolutions notables de SmartPoolManager sont consignees ici.
 Le format suit l'esprit de [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/)
 et le projet utilise un versionnage de type SemVer.
 
-## [Non publie]
+## [0.0.4] - 2026-07-11
+
+### Modifie
+
+- Republication propre depuis la branche `main`. Le tag `v0.0.3` avait ete cree
+  par erreur sur une ancienne branche et pointait vers le code 0.0.1 (etape des
+  options qui renvoyait une 500). La 0.0.4 embarque le meme code corrige que la
+  0.0.3 (correction du 500 a l'ouverture des options et etape Notifications
+  modifiable depuis l'interface), servi cette fois depuis `main`.
+
+## [0.0.3] - 2026-07-11
+
+### Ajoute
+
+- **Etape Notifications dans les options** : les trois services de
+  notification (`entity_notify_primary`, `entity_notify_critical` et le service
+  des recommandations `reco_notify_service`) sont desormais modifiables depuis
+  l'interface (bouton Configurer > Notifications), sans avoir a supprimer et
+  recreer l'integration.
+
+### Corrige
+
+- **Ouverture des options (erreur 500)** : l'OptionsFlow definissait
+  `self.config_entry` dans son `__init__`, ce que les versions recentes de Home
+  Assistant n'autorisent plus (la propriete `config_entry` est fournie par le
+  framework). Cela renvoyait une « 500 Internal Server Error » a l'ouverture des
+  parametres. Le constructeur a ete retire.
+
+### Modifie
+
+- Les services de notification par defaut pointent desormais vers
+  `notify.notify` (present sur toute installation) au lieu de
+  `notify.mobile_app_owner` / `notify.mobile_app_secondary`, qui n'existaient
+  pas forcement et provoquaient des echecs d'envoi.
+
+## [0.0.2] - 2026-07-11
 
 ### Corrige
 
@@ -80,6 +115,10 @@ un mode conseil (dosage manuel, quantites en grammes) et un mode automatique
 - **Configuration par l'interface** : assistant en 6 etapes (profil, sonde,
   pompes, systeme, consignes chimiques, recommandations) et OptionsFlow a deux
   entrees. Tout est parametrable, sans YAML.
+- **Installation avec la seule sonde** : les entites de dosage (pompes) et
+  d'automatisation (filtration, niveau, helpers Solar Optimizer) sont
+  facultatives. On peut donc installer l'integration en mode conseil seul,
+  sans aucun materiel de dosage.
 - **Multi-piscines** : plusieurs instances en parallele.
 - **Dashboard Lovelace** pret a importer et traductions francais / anglais.
 
@@ -90,4 +129,7 @@ un mode conseil (dosage manuel, quantites en grammes) et un mode automatique
 - Les entites sont exposees sous le domaine `smart_pool_manager`
   (par exemple `sensor.smart_pool_manager_<slug>_etat_global`).
 
+[0.0.4]: https://github.com/GevaudanBeast/Smart_Pool_Manager/releases/tag/v0.0.4
+[0.0.3]: https://github.com/GevaudanBeast/Smart_Pool_Manager/releases/tag/v0.0.3
+[0.0.2]: https://github.com/GevaudanBeast/Smart_Pool_Manager/releases/tag/v0.0.2
 [0.0.1]: https://github.com/GevaudanBeast/Smart_Pool_Manager/releases/tag/v0.0.1

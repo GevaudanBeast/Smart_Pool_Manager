@@ -230,9 +230,11 @@ class SmartPoolCoordinator(DataUpdateCoordinator):
             durations, dosing_ph_duration_s + dosing_cl_duration_s
         )
 
-        # Recuperer la duree max autorisee par Solar Optimizer (lecture seule)
-        so_max = safe_float(
-            self.hass.states.get(self.config[CONF_ENTITY_SO_MAX_DURATION])
+        # Recuperer la duree max autorisee par Solar Optimizer (lecture seule).
+        # Helper facultatif : absent si Solar Optimizer n'est pas utilise.
+        so_max_entity = self.config.get(CONF_ENTITY_SO_MAX_DURATION)
+        so_max = (
+            safe_float(self.hass.states.get(so_max_entity)) if so_max_entity else None
         )
         if so_max is not None:
             durations["max"] = int(so_max)
@@ -413,9 +415,12 @@ class SmartPoolCoordinator(DataUpdateCoordinator):
         if water_temperature is None:
             water_temperature = safe_float(states.get(FALLBACK_WATER_TEMPERATURE))
 
-        level_low = safe_bool(states.get(self.config[CONF_ENTITY_LEVEL_LOW]))
-        filtration_running = safe_bool(
-            states.get(self.config[CONF_ENTITY_SWITCH_FILTRATION])
+        # Entites d'automatisation facultatives : absentes en mode conseil seul.
+        level_entity = self.config.get(CONF_ENTITY_LEVEL_LOW)
+        level_low = safe_bool(states.get(level_entity)) if level_entity else False
+        filtration_entity = self.config.get(CONF_ENTITY_SWITCH_FILTRATION)
+        filtration_running = (
+            safe_bool(states.get(filtration_entity)) if filtration_entity else False
         )
 
         return {
@@ -466,7 +471,8 @@ class SmartPoolCoordinator(DataUpdateCoordinator):
         """
         # pH trop haut et hors tolerance : dosage pH si pas de dosage Cl en cours
         if (
-            ph_status in ("HIGH", "CRITICAL")
+            self.config.get(CONF_ENTITY_SWITCH_PH)
+            and ph_status in ("HIGH", "CRITICAL")
             and dosing_ph_ml > 0.0
             and not self._dosing_cl_running
             and not self._dosing_ph_running
@@ -479,7 +485,8 @@ class SmartPoolCoordinator(DataUpdateCoordinator):
 
         # Cl trop bas et hors tolerance : dosage Cl si pas de dosage pH en cours
         if (
-            cl_status == "LOW"
+            self.config.get(CONF_ENTITY_SWITCH_CL)
+            and cl_status == "LOW"
             and dosing_cl_ml > 0.0
             and not self._dosing_ph_running
             and not self._dosing_cl_running
@@ -502,6 +509,10 @@ class SmartPoolCoordinator(DataUpdateCoordinator):
         Regle absolue : toujours eteindre la pompe dans le bloc finally.
         Interlock : ne pas lancer si un dosage Cl est en cours.
         """
+        pump = self.config.get(CONF_ENTITY_SWITCH_PH)
+        if not pump:
+            _LOGGER.warning("Dosage pH demande mais aucune pompe pH configuree")
+            return
         if self._dosing_cl_running:
             _LOGGER.warning("Dosage pH ignore : dosage Cl en cours (interlock)")
             return
@@ -513,7 +524,7 @@ class SmartPoolCoordinator(DataUpdateCoordinator):
             await self.hass.services.async_call(
                 "switch",
                 "turn_on",
-                {"entity_id": self.config[CONF_ENTITY_SWITCH_PH]},
+                {"entity_id": pump},
                 blocking=True,
             )
             duration_s = min(
@@ -534,7 +545,7 @@ class SmartPoolCoordinator(DataUpdateCoordinator):
             await self.hass.services.async_call(
                 "switch",
                 "turn_off",
-                {"entity_id": self.config[CONF_ENTITY_SWITCH_PH]},
+                {"entity_id": pump},
                 blocking=True,
             )
             self._dosing_ph_running = False
@@ -550,6 +561,10 @@ class SmartPoolCoordinator(DataUpdateCoordinator):
         Interlock : ne pas lancer si un dosage pH est en cours.
         Regle absolue : toujours eteindre la pompe dans le bloc finally.
         """
+        pump = self.config.get(CONF_ENTITY_SWITCH_CL)
+        if not pump:
+            _LOGGER.warning("Dosage Cl demande mais aucune pompe Cl configuree")
+            return
         if self._dosing_ph_running:
             _LOGGER.warning("Dosage Cl ignore : dosage pH en cours (interlock)")
             return
@@ -561,7 +576,7 @@ class SmartPoolCoordinator(DataUpdateCoordinator):
             await self.hass.services.async_call(
                 "switch",
                 "turn_on",
-                {"entity_id": self.config[CONF_ENTITY_SWITCH_CL]},
+                {"entity_id": pump},
                 blocking=True,
             )
             duration_s = min(
@@ -582,7 +597,7 @@ class SmartPoolCoordinator(DataUpdateCoordinator):
             await self.hass.services.async_call(
                 "switch",
                 "turn_off",
-                {"entity_id": self.config[CONF_ENTITY_SWITCH_CL]},
+                {"entity_id": pump},
                 blocking=True,
             )
             self._dosing_cl_running = False
@@ -594,9 +609,11 @@ class SmartPoolCoordinator(DataUpdateCoordinator):
     async def _async_force_stop_pumps(self) -> None:
         """Coupe immediatement les deux pompes doseuses (watchdog)."""
         for entity in (
-            self.config[CONF_ENTITY_SWITCH_PH],
-            self.config[CONF_ENTITY_SWITCH_CL],
+            self.config.get(CONF_ENTITY_SWITCH_PH),
+            self.config.get(CONF_ENTITY_SWITCH_CL),
         ):
+            if not entity:
+                continue
             try:
                 await self.hass.services.async_call(
                     "switch", "turn_off", {"entity_id": entity}, blocking=True
@@ -614,12 +631,16 @@ class SmartPoolCoordinator(DataUpdateCoordinator):
 
     async def async_set_filtration(self, turn_on: bool) -> None:
         """Allume ou eteint la filtration via le switch configure."""
+        entity = self.config.get(CONF_ENTITY_SWITCH_FILTRATION)
+        if not entity:
+            _LOGGER.warning("Aucun switch de filtration configure")
+            return
         service = "turn_on" if turn_on else "turn_off"
         _LOGGER.info("Filtration %s demandee", "ON" if turn_on else "OFF")
         await self.hass.services.async_call(
             "switch",
             service,
-            {"entity_id": self.config[CONF_ENTITY_SWITCH_FILTRATION]},
+            {"entity_id": entity},
             blocking=True,
         )
 

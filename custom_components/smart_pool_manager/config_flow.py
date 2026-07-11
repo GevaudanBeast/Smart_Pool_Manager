@@ -85,13 +85,8 @@ from .const import (
     DEFAULT_DOSE_MAX_CL_ML,
     DEFAULT_DOSE_MAX_PH_ML,
     DEFAULT_DOSING_AUTO,
-    DEFAULT_ENTITY_LEVEL_LOW,
     DEFAULT_ENTITY_NOTIFY_CRITICAL,
     DEFAULT_ENTITY_NOTIFY_PRIMARY,
-    DEFAULT_ENTITY_SO_FILTRATION_DURATION,
-    DEFAULT_ENTITY_SO_MAX_DURATION,
-    DEFAULT_ENTITY_SWITCH_FILTRATION,
-    DEFAULT_ENTITY_WATER_TEMPERATURE,
     DEFAULT_FLOW_RATE_CL_ML_MIN,
     DEFAULT_FLOW_RATE_PH_ML_MIN,
     DEFAULT_ORP_MIN_MV,
@@ -407,10 +402,12 @@ class SmartPoolConfigFlow(ConfigFlow, domain=DOMAIN):
 
         switch_sel = EntitySelector(EntitySelectorConfig(domain="switch"))
         number_sel = EntitySelector(EntitySelectorConfig(domain="number"))
+        # Les pompes doseuses sont facultatives : un utilisateur qui dose a la
+        # main (mode conseil seul) laisse ces champs vides.
         schema = vol.Schema(
             {
-                vol.Required(CONF_ENTITY_SWITCH_PH): switch_sel,
-                vol.Required(CONF_ENTITY_SWITCH_CL): switch_sel,
+                vol.Optional(CONF_ENTITY_SWITCH_PH): switch_sel,
+                vol.Optional(CONF_ENTITY_SWITCH_CL): switch_sel,
                 vol.Optional(CONF_ENTITY_NUMBER_PH_SPEED): number_sel,
                 vol.Optional(CONF_ENTITY_NUMBER_CL_SPEED): number_sel,
                 vol.Required(
@@ -438,27 +435,28 @@ class SmartPoolConfigFlow(ConfigFlow, domain=DOMAIN):
             self._data.update(user_input)
             return await self.async_step_chemistry()
 
+        # Toutes ces entites sont facultatives : elles ne concernent que le
+        # mode automatique et l'interface Solar Optimizer. En mode conseil
+        # seul, on laisse vides celles dont on ne dispose pas. Le capteur de
+        # temperature reste utile pour la filtration conseillee, mais peut etre
+        # fourni par la sonde (etape 2).
         schema = vol.Schema(
             {
-                vol.Required(
-                    CONF_ENTITY_SWITCH_FILTRATION,
-                    default=DEFAULT_ENTITY_SWITCH_FILTRATION,
-                ): EntitySelector(EntitySelectorConfig(domain="switch")),
-                vol.Required(
-                    CONF_ENTITY_LEVEL_LOW, default=DEFAULT_ENTITY_LEVEL_LOW
-                ): EntitySelector(EntitySelectorConfig(domain="binary_sensor")),
-                vol.Required(
-                    CONF_ENTITY_WATER_TEMPERATURE,
-                    default=DEFAULT_ENTITY_WATER_TEMPERATURE,
-                ): EntitySelector(EntitySelectorConfig(domain="sensor")),
-                vol.Required(
-                    CONF_ENTITY_SO_FILTRATION_DURATION,
-                    default=DEFAULT_ENTITY_SO_FILTRATION_DURATION,
-                ): EntitySelector(EntitySelectorConfig(domain="input_number")),
-                vol.Required(
-                    CONF_ENTITY_SO_MAX_DURATION,
-                    default=DEFAULT_ENTITY_SO_MAX_DURATION,
-                ): EntitySelector(EntitySelectorConfig(domain="input_number")),
+                vol.Optional(CONF_ENTITY_SWITCH_FILTRATION): EntitySelector(
+                    EntitySelectorConfig(domain="switch")
+                ),
+                vol.Optional(CONF_ENTITY_LEVEL_LOW): EntitySelector(
+                    EntitySelectorConfig(domain="binary_sensor")
+                ),
+                vol.Optional(CONF_ENTITY_WATER_TEMPERATURE): EntitySelector(
+                    EntitySelectorConfig(domain="sensor")
+                ),
+                vol.Optional(CONF_ENTITY_SO_FILTRATION_DURATION): EntitySelector(
+                    EntitySelectorConfig(domain="input_number")
+                ),
+                vol.Optional(CONF_ENTITY_SO_MAX_DURATION): EntitySelector(
+                    EntitySelectorConfig(domain="input_number")
+                ),
             }
         )
         return self.async_show_form(step_id="system", data_schema=schema)
@@ -488,25 +486,57 @@ class SmartPoolConfigFlow(ConfigFlow, domain=DOMAIN):
     @staticmethod
     @callback
     def async_get_options_flow(config_entry: ConfigEntry) -> OptionsFlow:
-        """Retourne l'OptionsFlow associe."""
-        return SmartPoolOptionsFlow(config_entry)
+        """Retourne l'OptionsFlow associe.
+
+        On ne passe plus config_entry au constructeur : Home Assistant fournit
+        lui-meme la propriete config_entry. Definir un __init__ qui affecte
+        self.config_entry declenche une erreur sur les versions recentes de HA
+        (le flux d'options renvoie alors une 500 a l'ouverture).
+        """
+        return SmartPoolOptionsFlow()
+
+
+def _notify_schema(defaults: dict[str, Any]) -> vol.Schema:
+    """Construit le schema de l'etape notifications de l'OptionsFlow.
+
+    Rend modifiables depuis l'UI les trois services de notification, sans
+    toucher aux entites. Chaque champ est un simple texte pre-rempli avec la
+    valeur courante.
+    """
+    return vol.Schema(
+        {
+            vol.Required(
+                CONF_ENTITY_NOTIFY_PRIMARY,
+                default=defaults.get(
+                    CONF_ENTITY_NOTIFY_PRIMARY, DEFAULT_ENTITY_NOTIFY_PRIMARY
+                ),
+            ): TextSelector(),
+            vol.Required(
+                CONF_ENTITY_NOTIFY_CRITICAL,
+                default=defaults.get(
+                    CONF_ENTITY_NOTIFY_CRITICAL, DEFAULT_ENTITY_NOTIFY_CRITICAL
+                ),
+            ): TextSelector(),
+            vol.Required(
+                CONF_RECO_NOTIFY_SERVICE,
+                default=defaults.get(
+                    CONF_RECO_NOTIFY_SERVICE, DEFAULT_RECO_NOTIFY_SERVICE
+                ),
+            ): TextSelector(),
+        }
+    )
 
 
 class SmartPoolOptionsFlow(OptionsFlow):
-    """OptionsFlow : modifie uniquement les consignes chimiques (etape 5).
-
-    Les entites configurees aux etapes 2 a 4 ne sont pas touchees.
+    """OptionsFlow : modifie les consignes chimiques, le conseil manuel et les
+    services de notification, sans toucher aux entites (etapes 2 a 4).
     """
 
-    def __init__(self, config_entry: ConfigEntry) -> None:
-        """Conserve l'entree pour pre-remplir les valeurs courantes."""
-        self.config_entry = config_entry
-
     async def async_step_init(self, user_input: dict[str, Any] | None = None) -> Any:
-        """Menu de choix : consignes chimiques ou recommandations manuelles."""
+        """Menu de choix : consignes, recommandations ou notifications."""
         return self.async_show_menu(
             step_id="init",
-            menu_options=["chemistry", "reco"],
+            menu_options=["chemistry", "reco", "notifications"],
         )
 
     async def async_step_chemistry(
@@ -530,3 +560,16 @@ class SmartPoolOptionsFlow(OptionsFlow):
 
         defaults = {**self.config_entry.data, **self.config_entry.options}
         return self.async_show_form(step_id="reco", data_schema=_reco_schema(defaults))
+
+    async def async_step_notifications(
+        self, user_input: dict[str, Any] | None = None
+    ) -> Any:
+        """Modifie les services de notification (notify)."""
+        if user_input is not None:
+            data = {**self.config_entry.options, **user_input}
+            return self.async_create_entry(title="", data=data)
+
+        defaults = {**self.config_entry.data, **self.config_entry.options}
+        return self.async_show_form(
+            step_id="notifications", data_schema=_notify_schema(defaults)
+        )
