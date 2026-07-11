@@ -4,7 +4,7 @@ Toutes les evolutions notables de SmartPoolManager sont consignees ici.
 Le format suit l'esprit de [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/)
 et le projet utilise un versionnage de type SemVer.
 
-## [Non publie]
+## [0.0.2] - 2026-07-11
 
 ### Corrige
 
@@ -94,4 +94,5 @@ un mode conseil (dosage manuel, quantites en grammes) et un mode automatique
 - Les entites sont exposees sous le domaine `smart_pool_manager`
   (par exemple `sensor.smart_pool_manager_<slug>_etat_global`).
 
+[0.0.2]: https://github.com/GevaudanBeast/Smart_Pool_Manager/releases/tag/v0.0.2
 [0.0.1]: https://github.com/GevaudanBeast/Smart_Pool_Manager/releases/tag/v0.0.1
