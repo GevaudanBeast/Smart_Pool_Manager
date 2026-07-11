@@ -93,7 +93,8 @@
         "title": "SmartPoolManager settings",
         "menu_options": {
           "chemistry": "Chemical setpoints (auto dosing)",
-          "reco": "Manual recommendations (grams)"
+          "reco": "Manual recommendations (grams)",
+          "notifications": "Notifications (notify services)"
         }
       },
       "chemistry": {
@@ -129,6 +130,15 @@
           "reco_galet_g": "Slow chlorine tablet mass (g)",
           "reco_ref_volume_m3": "Reference volume for doses (m3)",
           "reco_notify_service": "Notification service (default: persistent_notification)"
+        }
+      },
+      "notifications": {
+        "title": "Notifications",
+        "description": "Choose the notify services used for alerts and recommendations (for example notify.aurelien_f).",
+        "data": {
+          "entity_notify_primary": "Primary notification (e.g. notify.aurelien_f)",
+          "entity_notify_critical": "Critical notification (e.g. notify.aurelien_f)",
+          "reco_notify_service": "Service for recommendations (default: persistent_notification)"
         }
       }
     }

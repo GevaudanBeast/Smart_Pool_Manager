@@ -93,7 +93,8 @@
         "title": "Reglages SmartPoolManager",
         "menu_options": {
           "chemistry": "Consignes chimiques (dosage auto)",
-          "reco": "Recommandations manuelles (grammes)"
+          "reco": "Recommandations manuelles (grammes)",
+          "notifications": "Notifications (services notify)"
         }
       },
       "chemistry": {
@@ -129,6 +130,15 @@
           "reco_galet_g": "Masse d'un galet de chlore lent (g)",
           "reco_ref_volume_m3": "Volume de reference des doses (m3)",
           "reco_notify_service": "Service de notification (defaut: persistent_notification)"
+        }
+      },
+      "notifications": {
+        "title": "Notifications",
+        "description": "Choisir les services notify utilises pour les alertes et les recommandations (par exemple notify.aurelien_f).",
+        "data": {
+          "entity_notify_primary": "Notification principale (ex: notify.aurelien_f)",
+          "entity_notify_critical": "Notification critique (ex: notify.aurelien_f)",
+          "reco_notify_service": "Service pour les recommandations (defaut: persistent_notification)"
         }
       }
     }
