@@ -127,9 +127,16 @@ class SmartPoolSensor(SmartPoolEntity, SensorEntity):
         if description.device_class == SensorDeviceClass.TEMPERATURE:
             self._attr_state_class = SensorStateClass.MEASUREMENT
 
-    @property
-    def native_value(self):
-        """Retourne la valeur courante depuis le coordinator."""
+    # Limite stricte d'un state Home Assistant. Au dela, HA rejette la valeur
+    # et le capteur retombe sur "unknown". On tronque donc la valeur exposee.
+    _MAX_STATE_LENGTH = 255
+
+    def _raw_value(self):
+        """Retourne la valeur brute exploitable (str si concernee).
+
+        Serialise la liste JSON le cas echeant. Utilise a la fois par
+        native_value et extra_state_attributes pour rester coherent.
+        """
         value = self.coordinator.data.get(self._desc.key)
         if self._desc.is_json:
             # Serialise la liste d'alertes en chaine JSON exploitable cote UI.
@@ -137,12 +144,31 @@ class SmartPoolSensor(SmartPoolEntity, SensorEntity):
         return value
 
     @property
-    def extra_state_attributes(self) -> dict | None:
-        """Expose des attributs supplementaires si la description en definit.
+    def native_value(self):
+        """Retourne la valeur courante, tronquee si elle depasse 255 caracteres."""
+        value = self._raw_value()
+        if isinstance(value, str) and len(value) > self._MAX_STATE_LENGTH:
+            # 252 caracteres + "..." = 255 caracteres au total.
+            return value[:252] + "..."
+        return value
 
-        Sert notamment a publier la formule de calcul de la filtration
-        conseillee sur le capteur dedie.
+    @property
+    def extra_state_attributes(self) -> dict | None:
+        """Expose les attributs supplementaires du capteur.
+
+        Publie les attributs definis par la description (par exemple la
+        formule de calcul de la filtration conseillee) et, si la valeur du
+        state a du etre tronquee a 255 caracteres, expose le texte integral
+        dans la cle texte_complet. Les deux sources sont fusionnees.
         """
-        if not self._desc.attrs_key:
-            return None
-        return self.coordinator.data.get(self._desc.attrs_key)
+        attrs: dict = {}
+        if self._desc.attrs_key:
+            base = self.coordinator.data.get(self._desc.attrs_key)
+            if base:
+                attrs.update(base)
+
+        value = self._raw_value()
+        if isinstance(value, str) and len(value) > self._MAX_STATE_LENGTH:
+            attrs["texte_complet"] = value
+
+        return attrs or None

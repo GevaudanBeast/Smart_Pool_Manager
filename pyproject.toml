@@ -14,8 +14,10 @@ line-length = 88
 # imports (I), bugbear (B), simplifications (SIM) et upgrade (UP).
 select = ["E", "W", "F", "I", "B", "SIM", "UP"]
 ignore = [
-  # Les appels a des methodes protegees du coordinator (_async_dose_ph) depuis
-  # les services sont volontaires et internes a l'integration.
+  # On conserve volontairement "timezone.utc" (stdlib explicite) plutot que
+  # l'alias datetime.UTC, pour garder calculations/ lisible et sans dependance
+  # a une API recente dans le module de calculs purs.
+  "UP017",
 ]
 
 [tool.ruff.lint.per-file-ignores]
