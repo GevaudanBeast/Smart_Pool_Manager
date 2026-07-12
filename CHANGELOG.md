@@ -4,6 +4,16 @@ Toutes les evolutions notables de SmartPoolManager sont consignees ici.
 Le format suit l'esprit de [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/)
 et le projet utilise un versionnage de type SemVer.
 
+## [Non publie]
+
+### Corrige
+
+- **Raisons de securite stables** : les messages de delai entre doses
+  n'incluent plus le decompte minute (« X min remaining »). Ce texte changeait
+  a chaque minute et faisait varier l'etat du capteur `alerts`, sollicitant le
+  recorder inutilement. Les raisons sont desormais « pH dose delay not
+  elapsed » et « Cl dose delay not elapsed », stables tant que le blocage dure.
+
 ## [0.0.4] - 2026-07-11
 
 ### Modifie

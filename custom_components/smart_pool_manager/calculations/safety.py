@@ -87,16 +87,14 @@ def evaluate_safety(data: dict, config: dict) -> SafetyResult:
     if last_ph is not None:
         elapsed = _elapsed_seconds(last_ph)
         if elapsed < config["delay_between_doses_min"] * 60:
-            remaining = int((config["delay_between_doses_min"] * 60 - elapsed) / 60)
-            reasons.append(f"pH dose delay not elapsed ({remaining} min remaining)")
+            reasons.append("pH dose delay not elapsed")
 
     # Regle 5 : delai entre doses Cl
     last_cl = data.get("last_dose_cl")
     if last_cl is not None:
         elapsed = _elapsed_seconds(last_cl)
         if elapsed < config["delay_between_doses_min"] * 60:
-            remaining = int((config["delay_between_doses_min"] * 60 - elapsed) / 60)
-            reasons.append(f"Cl dose delay not elapsed ({remaining} min remaining)")
+            reasons.append("Cl dose delay not elapsed")
 
     # Regle 6 : watchdog pompe (activite trop longue)
     if (
