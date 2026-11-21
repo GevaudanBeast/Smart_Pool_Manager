@@ -92,3 +92,43 @@ def test_duree_filtration_ecrite_seulement_avec_temperature():
                 assert "_async_write_filtration_duration" in inner
                 return
     raise AssertionError("ecriture de duree non conditionnee a la temperature")
+
+
+# --- v0.0.6 : hivernage passif ----------------------------------------------
+
+
+def _source(name: str) -> str:
+    return ast.unparse(_method(name))
+
+
+def test_hivernage_lecture_sans_sonde():
+    update = _source("_async_update_data")
+    assert "is_winter" in update
+    assert "ignore_probe" in update
+    read = _source("_read_entities")
+    assert "ignore_probe" in read
+
+
+def test_hivernage_aucune_ecriture_de_duree():
+    update = _method("_async_update_data")
+    for node in ast.walk(update):
+        if isinstance(node, ast.If):
+            body_calls = {
+                sub.func.attr
+                for stmt in node.body
+                for sub in ast.walk(stmt)
+                if isinstance(sub, ast.Call) and isinstance(sub.func, ast.Attribute)
+            }
+            test = ast.unparse(node.test)
+            if "_async_write_filtration_duration" in body_calls:
+                assert "not in_winter" in test, test
+                return
+    raise AssertionError("ecriture de duree introuvable")
+
+
+def test_hivernage_alertes_et_recos_court_circuitees():
+    update = _source("_async_update_data")
+    assert "winter_recommendations" in update
+    assert "'winter_mode'" in update or '"winter_mode"' in update
+    # Les alertes ne sont pas evaluees en hivernage.
+    assert "if in_winter" in update
