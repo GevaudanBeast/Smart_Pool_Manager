@@ -258,8 +258,12 @@ class SmartPoolCoordinator(DataUpdateCoordinator):
             if durations["recommended"] > durations["max"]:
                 durations["recommended"] = durations["max"]
 
-        # 5 : ecrire la duree min calculee dans le helper Solar Optimizer
-        await self._async_write_filtration_duration(durations["min"])
+        # 5 : ecrire la duree min calculee dans le helper Solar Optimizer.
+        # Sans temperature (demarrage de HA, sonde absente), on n'ecrit rien :
+        # le helper garde sa derniere valeur au lieu de recevoir le palier
+        # prudent puis la vraie duree au cycle suivant.
+        if temperature is not None:
+            await self._async_write_filtration_duration(durations["min"])
 
         # Statuts chimiques
         ph_status = chemistry.evaluate_ph_status(raw["ph"], ph_target, ph_tolerance)
