@@ -6,7 +6,23 @@ et le projet utilise un versionnage de type SemVer.
 
 ## [Non publie]
 
+## [0.0.5] - 2026-11-21
+
 ### Corrige
+
+- **Mesures de sonde hors plage** : une sonde peut publier des valeurs
+  sentinelles (pH 2.1, TDS 9999, salinite 9990 g/L, chlore -0.1 mg/L)
+  acceptees jusqu'ici comme reelles. Le nouveau module
+  `calculations/plausibility.py` ecarte toute mesure hors plage plausible
+  (pH 5 a 9.5, ORP 0 a 1200 mV, chlore 0 a 10 mg/L, TDS 0 a 9000 ppm,
+  salinite 0 a 50 g/L, temperature -5 a 45 C) : elle est traitee comme
+  indisponible et journalisee une fois a chaque changement.
+- **Dosage auto bloque sur defaut de sonde** : nouvelle regle de securite
+  « Probe value out of range - auto dosing suspended ». Avant, seule une
+  mesure absente bloquait le dosage, une valeur sentinelle passait.
+- **Recommandations** : plus de dose de produit calculee sur une mesure
+  aberrante (cas reel : « environ 8160 g de pH plus »). La recommandation
+  devient « Sonde a verifier » avec les valeurs ignorees.
 
 - **Raisons de securite stables** : les messages de delai entre doses
   n'incluent plus le decompte minute (« X min remaining »). Ce texte changeait
