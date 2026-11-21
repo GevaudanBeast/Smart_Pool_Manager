@@ -20,7 +20,13 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 from homeassistant.util import dt as dt_util
 
-from .calculations import chemistry, filtration, recommendations, safety
+from .calculations import (
+    chemistry,
+    filtration,
+    plausibility,
+    recommendations,
+    safety,
+)
 from .const import (
     CONF_CL_TARGET_MG_L,
     CONF_CL_TOLERANCE,
@@ -141,6 +147,8 @@ class SmartPoolCoordinator(DataUpdateCoordinator):
 
         # Etat interne persistant entre les cycles (dates de dernier dosage,
         # suivi des alertes deja notifiees, etc.).
+        # Dernieres mesures rejetees, pour ne journaliser qu'au changement.
+        self._last_rejected: dict[str, float] = {}
         self._last_dose_ph: datetime | None = None
         self._last_dose_cl: datetime | None = None
         self._dosing_ph_running = False
@@ -177,6 +185,12 @@ class SmartPoolCoordinator(DataUpdateCoordinator):
 
         # 1 et 2 : lecture des entites et conversion securisee
         raw = self._read_entities()
+        # 2bis : ecarter les mesures hors plage plausible (defaut de sonde)
+        raw, rejected = plausibility.sanitize_measures(raw)
+        if rejected != self._last_rejected:
+            if rejected:
+                _LOGGER.warning("Mesures sonde hors plage ignorees: %s", rejected)
+            self._last_rejected = rejected
 
         # 3 : calcul des durees de filtration
         temperature = raw["water_temperature"]
@@ -274,6 +288,7 @@ class SmartPoolCoordinator(DataUpdateCoordinator):
             "cl": raw["cl"],
             "last_dose_ph": self._last_dose_ph,
             "last_dose_cl": self._last_dose_cl,
+            "probe_out_of_range": rejected,
             "dosing_ph_running_since_s": ph_running_since,
             "dosing_cl_running_since_s": cl_running_since,
         }
@@ -358,6 +373,7 @@ class SmartPoolCoordinator(DataUpdateCoordinator):
                 "cl": raw["cl"],
                 "orp": raw["orp"],
                 "temperature": raw["water_temperature"],
+                "rejected": rejected,
             },
             self._reco_params(),
         )
