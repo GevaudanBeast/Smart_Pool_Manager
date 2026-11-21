@@ -6,6 +6,18 @@ et le projet utilise un versionnage de type SemVer.
 
 ## [Non publie]
 
+## [0.0.6] - 2026-11-21
+
+### Ajoute
+
+- **Hivernage passif** (select `filtration_mode` = `winter`) : la sonde est
+  entierement ignoree (pH, ORP, chlore, TDS, salinite, temperature de sonde),
+  la temperature d'eau vient de la source de secours, aucune alerte ni
+  notification sonde, recommandation « Hivernage : aucune action chimique »,
+  dosage auto bloque (regle de securite « Winter mode - dosing disabled »),
+  aucune ecriture de duree de filtration vers Solar Optimizer. La coupure du
+  switch de filtration au choix du mode est conservee (pompe arretee).
+
 ## [0.0.5] - 2026-11-21
 
 ### Corrige
