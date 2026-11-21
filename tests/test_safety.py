@@ -95,3 +95,22 @@ def test_all_ok():
     assert result.filtration_ok is True
     assert result.force_stop_dosing is False
     assert result.reasons == []
+
+
+# --- v0.0.5 : mesures hors plage ------------------------------------------
+
+
+def test_mesure_hors_plage_bloque_le_dosage():
+    """Une mesure rejetee par le filtre de plausibilite bloque le dosage auto."""
+    data = _base_data()
+    data["probe_out_of_range"] = {"cl": -0.1}
+    result = evaluate_safety(data, CONFIG)
+    assert result.dosing_ok is False
+    assert "Probe value out of range - auto dosing suspended" in result.reasons
+
+
+def test_sans_mesure_hors_plage_dosage_autorise():
+    data = _base_data()
+    data["probe_out_of_range"] = {}
+    result = evaluate_safety(data, CONFIG)
+    assert result.dosing_ok is True

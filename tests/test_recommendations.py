@@ -169,3 +169,22 @@ def test_disclaimer_present_si_dose():
     """Un avertissement de prudence accompagne toute dose de produit."""
     res = compute_recommendations(_measures(ph=7.6, cl=2.0, orp=700), PARAMS)
     assert "verifiez l'emballage" in res["texte"].lower()
+
+
+# --- v0.0.5 : mesures rejetees --------------------------------------------
+
+
+def test_mesure_rejetee_conseille_de_verifier_la_sonde():
+    """Cas du 21/11 : pH 2.1 rejete, plus aucune dose de pH plus conseillee."""
+    measures = _measures(orp=734, temperature=17.5)
+    measures["rejected"] = {"ph": 2.1, "cl": -0.1}
+    res = compute_recommendations(measures, PARAMS)
+    assert "pH plus" not in res["texte"]
+    assert "chlore choc" not in res["texte"]
+    assert "sonde" in res["prochaine_action"].lower()
+    assert "2.1" in res["texte"]
+
+
+def test_sans_rejet_comportement_inchange():
+    res = compute_recommendations(_measures(ph=7.2, cl=2.0, orp=700), PARAMS)
+    assert "sonde" not in res["texte"].lower()
