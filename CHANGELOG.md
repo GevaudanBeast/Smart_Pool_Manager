@@ -23,6 +23,9 @@ et le projet utilise un versionnage de type SemVer.
 - **Recommandations** : plus de dose de produit calculee sur une mesure
   aberrante (cas reel : « environ 8160 g de pH plus »). La recommandation
   devient « Sonde a verifier » avec les valeurs ignorees.
+- **Duree de filtration au demarrage** : sans temperature d'eau, la duree
+  n'est plus ecrite dans le helper Solar Optimizer. Avant, chaque demarrage
+  ecrivait le palier prudent (60 min) puis la vraie duree (240 min).
 
 - **Raisons de securite stables** : les messages de delai entre doses
   n'incluent plus le decompte minute (« X min remaining »). Ce texte changeait
