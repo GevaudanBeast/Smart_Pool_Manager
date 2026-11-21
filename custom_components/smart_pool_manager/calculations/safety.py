@@ -66,6 +66,11 @@ def evaluate_safety(data: dict, config: dict) -> SafetyResult:
     filtration_ok = True
     force_stop = False
 
+    # Regle 0 : hivernage, aucun dosage quelle que soit la mesure
+    if data.get("winter_mode") is True:
+        reasons.append("Winter mode - dosing disabled")
+        dosing_ok = False
+
     # Regle 1 : niveau bas bloque tout (dosage et filtration)
     if data.get("level_low") is True:
         reasons.append("Insufficient water level")
