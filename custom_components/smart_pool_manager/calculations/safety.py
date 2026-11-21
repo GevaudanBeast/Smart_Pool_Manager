@@ -82,6 +82,12 @@ def evaluate_safety(data: dict, config: dict) -> SafetyResult:
         reasons.append("Probe unavailable - auto dosing suspended")
         dosing_ok = False
 
+    # Regle 3bis : mesure hors plage plausible (defaut de sonde) bloque le
+    # dosage auto, meme si une autre mesure reste lisible.
+    if data.get("probe_out_of_range"):
+        reasons.append("Probe value out of range - auto dosing suspended")
+        dosing_ok = False
+
     # Regle 4 : delai entre doses pH
     last_ph = data.get("last_dose_ph")
     if last_ph is not None:
