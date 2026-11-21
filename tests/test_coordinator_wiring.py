@@ -66,3 +66,29 @@ def test_rejets_transmis_a_la_securite_et_aux_recos():
     }
     assert "probe_out_of_range" in keys
     assert "rejected" in keys
+
+
+def test_duree_filtration_ecrite_seulement_avec_temperature():
+    """Constat du 21/11 : au demarrage, temperature absente, le coordinator
+    ecrivait une duree prudente (60 min) puis la vraie (240 min). L'ecriture
+    vers Solar Optimizer doit etre conditionnee a une temperature connue."""
+    update = _method("_async_update_data")
+    for node in ast.walk(update):
+        if isinstance(node, ast.If) and "temperature" in ast.unparse(node.test):
+            inner = {
+                sub.func.attr
+                for sub in ast.walk(node)
+                if isinstance(sub, ast.Call) and isinstance(sub.func, ast.Attribute)
+            }
+            body_calls = {
+                sub.func.attr
+                for stmt in node.body
+                for sub in ast.walk(stmt)
+                if isinstance(sub, ast.Call) and isinstance(sub.func, ast.Attribute)
+            }
+            if "_async_write_filtration_duration" in body_calls and (
+                "is not None" in ast.unparse(node.test)
+            ):
+                assert "_async_write_filtration_duration" in inner
+                return
+    raise AssertionError("ecriture de duree non conditionnee a la temperature")
