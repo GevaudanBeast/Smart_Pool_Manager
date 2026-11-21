@@ -26,6 +26,7 @@ from .calculations import (
     plausibility,
     recommendations,
     safety,
+    winter,
 )
 from .const import (
     CONF_CL_TARGET_MG_L,
@@ -183,8 +184,13 @@ class SmartPoolCoordinator(DataUpdateCoordinator):
         """
         _LOGGER.debug("Cycle coordinator %s demarre", self.name)
 
+        # 0 : hivernage passif (select filtration_mode = winter). La sonde est
+        # ignoree, pas d'alerte ni de reco chimique, pas de dosage, pas
+        # d'ecriture de duree. La pompe a ete coupee au choix du mode.
+        in_winter = winter.is_winter(self.config)
+
         # 1 et 2 : lecture des entites et conversion securisee
-        raw = self._read_entities()
+        raw = self._read_entities(ignore_probe=in_winter)
         # 2bis : ecarter les mesures hors plage plausible (defaut de sonde)
         raw, rejected = plausibility.sanitize_measures(raw)
         if rejected != self._last_rejected:
@@ -262,7 +268,7 @@ class SmartPoolCoordinator(DataUpdateCoordinator):
         # Sans temperature (demarrage de HA, sonde absente), on n'ecrit rien :
         # le helper garde sa derniere valeur au lieu de recevoir le palier
         # prudent puis la vraie duree au cycle suivant.
-        if temperature is not None:
+        if temperature is not None and not in_winter:
             await self._async_write_filtration_duration(durations["min"])
 
         # Statuts chimiques
@@ -293,6 +299,7 @@ class SmartPoolCoordinator(DataUpdateCoordinator):
             "last_dose_ph": self._last_dose_ph,
             "last_dose_cl": self._last_dose_cl,
             "probe_out_of_range": rejected,
+            "winter_mode": in_winter,
             "dosing_ph_running_since_s": ph_running_since,
             "dosing_cl_running_since_s": cl_running_since,
         }
@@ -364,23 +371,32 @@ class SmartPoolCoordinator(DataUpdateCoordinator):
             )
 
         # 9 : evaluation des alertes
-        alerts = self._evaluate_alerts(
-            raw, ph_status, cl_status, orp_status, safety_result, now
-        )
+        if in_winter:
+            # Hivernage : aucune alerte (sonde hivernee, niveau abaisse, pompe
+            # arretee sont normaux) et pas de suivi d'indisponibilite sonde.
+            alerts = []
+            self._probe_unavailable_since = None
+        else:
+            alerts = self._evaluate_alerts(
+                raw, ph_status, cl_status, orp_status, safety_result, now
+            )
         data["alerts"] = alerts
         data["alert_active"] = len(alerts) > 0
 
         # 9bis : recommandations manuelles en grammes (conseiller utilisateur)
-        reco = recommendations.compute_recommendations(
-            {
-                "ph": raw["ph"],
-                "cl": raw["cl"],
-                "orp": raw["orp"],
-                "temperature": raw["water_temperature"],
-                "rejected": rejected,
-            },
-            self._reco_params(),
-        )
+        if in_winter:
+            reco = winter.winter_recommendations()
+        else:
+            reco = recommendations.compute_recommendations(
+                {
+                    "ph": raw["ph"],
+                    "cl": raw["cl"],
+                    "orp": raw["orp"],
+                    "temperature": raw["water_temperature"],
+                    "rejected": rejected,
+                },
+                self._reco_params(),
+            )
         data["reco_etat_global"] = reco["etat_global"]
         data["reco_prochaine_action"] = reco["prochaine_action"]
         data["reco_recommandations"] = reco["texte"]
@@ -405,8 +421,13 @@ class SmartPoolCoordinator(DataUpdateCoordinator):
     # Lecture des entites
     # ------------------------------------------------------------------
 
-    def _read_entities(self) -> dict:
-        """Lit toutes les entites configurees avec conversion securisee."""
+    def _read_entities(self, ignore_probe: bool = False) -> dict:
+        """Lit toutes les entites configurees avec conversion securisee.
+
+        Args:
+            ignore_probe: True en hivernage. Les mesures de sonde valent None
+                et la temperature vient uniquement de la source de secours.
+        """
         states = self.hass.states
 
         ph = safe_float(states.get(self.config[CONF_ENTITY_PH]))
@@ -424,7 +445,7 @@ class SmartPoolCoordinator(DataUpdateCoordinator):
         # Temperature eau : sonde dediee si configuree, sinon entite systeme,
         # sinon repli sur le template sensor securise.
         water_temperature = None
-        if self.config.get(CONF_ENTITY_PROBE_TEMPERATURE):
+        if self.config.get(CONF_ENTITY_PROBE_TEMPERATURE) and not ignore_probe:
             water_temperature = safe_float(
                 states.get(self.config[CONF_ENTITY_PROBE_TEMPERATURE])
             )
@@ -443,7 +464,7 @@ class SmartPoolCoordinator(DataUpdateCoordinator):
             safe_bool(states.get(filtration_entity)) if filtration_entity else False
         )
 
-        return {
+        raw = {
             "ph": ph,
             "orp": orp,
             "cl": cl,
@@ -453,6 +474,9 @@ class SmartPoolCoordinator(DataUpdateCoordinator):
             "level_low": level_low,
             "filtration_running": filtration_running,
         }
+        if ignore_probe:
+            raw = winter.strip_probe(raw)
+        return raw
 
     # ------------------------------------------------------------------
     # Ecriture Solar Optimizer
