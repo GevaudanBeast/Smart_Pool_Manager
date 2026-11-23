@@ -66,6 +66,11 @@ def evaluate_safety(data: dict, config: dict) -> SafetyResult:
     filtration_ok = True
     force_stop = False
 
+    # Regle 0 : hivernage, aucun dosage quelle que soit la mesure
+    if data.get("winter_mode") is True:
+        reasons.append("Winter mode - dosing disabled")
+        dosing_ok = False
+
     # Regle 1 : niveau bas bloque tout (dosage et filtration)
     if data.get("level_low") is True:
         reasons.append("Insufficient water level")
@@ -80,6 +85,12 @@ def evaluate_safety(data: dict, config: dict) -> SafetyResult:
     # Regle 3 : sonde indisponible bloque le dosage auto
     if data.get("ph") is None or data.get("cl") is None:
         reasons.append("Probe unavailable - auto dosing suspended")
+        dosing_ok = False
+
+    # Regle 3bis : mesure hors plage plausible (defaut de sonde) bloque le
+    # dosage auto, meme si une autre mesure reste lisible.
+    if data.get("probe_out_of_range"):
+        reasons.append("Probe value out of range - auto dosing suspended")
         dosing_ok = False
 
     # Regle 4 : delai entre doses pH

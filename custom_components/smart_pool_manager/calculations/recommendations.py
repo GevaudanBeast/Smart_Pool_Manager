@@ -79,6 +79,8 @@ def compute_recommendations(measures: dict, params: dict) -> dict:
     cl = measures.get("cl")
     orp = measures.get("orp")
     temperature = measures.get("temperature")
+    # Mesures ecartees par le filtre de plausibilite : {nom: valeur brute}.
+    rejected = measures.get("rejected") or {}
 
     # Facteur d'echelle : les doses de reference sont donnees pour un volume
     # de reference (16 m3 par defaut). On adapte lineairement au volume reel.
@@ -92,6 +94,16 @@ def compute_recommendations(measures: dict, params: dict) -> dict:
 
     actions: list[dict] = []
     notes: list[str] = []
+
+    # --- Sonde suspecte -----------------------------------------------------
+    # Une mesure hors plage est un defaut de sonde : on le dit en premier, et
+    # la mesure (passee a None par le coordinator) ne donne aucune dose.
+    if rejected:
+        detail = ", ".join(f"{nom}={valeur}" for nom, valeur in rejected.items())
+        notes.append(
+            f"Sonde a verifier : mesure hors plage ignoree ({detail}). "
+            "Controlez la sonde avant tout ajout de produit."
+        )
 
     # --- pH ---------------------------------------------------------------
     ph_off = False
